@@ -1,0 +1,46 @@
+##
+# This file describes the project's metadata and dependencies in the
+# standard PEP 621 format.  It enables modern tooling such as uv to
+# manage and install dependencies.  When using uv, you can add or
+# remove dependencies by editing the tables here or by running
+# commands like `uv add` and `uv remove`.  See the uv documentation
+# for details on dependency management【832199573188594†L166-L182】.
+
+[project]
+name = "langchain_agentic_services"
+version = "0.1.0"
+description = "A simple LangChain-like agent for translation and question answering using a local vLLM server."
+authors = [
+  { name = "Nec", email = "nec.zhang.711@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.12"
+
+# Core runtime dependencies.  These are required for the agent to run.
+dependencies = [
+  "requests",
+  "scikit-learn",
+  "python-pptx",
+  "PyMuPDF",
+  "Pillow",
+  "tqdm>=4.67.1",
+  "fastapi>=0.116.1",
+  "uvicorn>=0.35.0",
+  "python-multipart>=0.0.20",
+  "python-dotenv>=1.1.1",
+]
+
+# Optional dependencies.  These are not needed for the basic agent but
+# enable additional file formats (e.g. Word documents) and OCR
+# support.  You can install them with `uv pip install .[extras]`.
+[project.optional-dependencies]
+extras = [
+  "python-docx",
+  "pytesseract"
+]
+
+[build-system]
+requires = [
+  "setuptools>=61.0"
+]
+build-backend = "setuptools.build_meta"
