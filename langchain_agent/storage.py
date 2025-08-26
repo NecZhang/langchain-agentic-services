@@ -35,7 +35,32 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
 import joblib
 
-DEFAULT_BASE_DIR = Path(".data")
+# Production-ready default paths
+DEFAULT_BASE_DIR = Path("/var/lib/agentic-service")
+DEFAULT_TEMP_DIR = Path("/tmp/agentic-uploads")
+
+# Fallback to project directory only for development
+if not DEFAULT_BASE_DIR.exists() and not os.environ.get("AGENTIC_DATA_DIR"):
+    DEFAULT_BASE_DIR = Path(".data")
+if not DEFAULT_TEMP_DIR.exists() and not os.environ.get("AGENTIC_TEMP_DIR"):
+    DEFAULT_TEMP_DIR = Path(".tmp_uploads")
+
+def get_storage_paths() -> Tuple[Path, Path]:
+    """Get configured storage paths from environment variables."""
+    data_dir = os.environ.get("AGENTIC_DATA_DIR")
+    temp_dir = os.environ.get("AGENTIC_TEMP_DIR")
+    
+    if data_dir:
+        data_path = Path(data_dir)
+    else:
+        data_path = DEFAULT_BASE_DIR
+        
+    if temp_dir:
+        temp_path = Path(temp_dir)
+    else:
+        temp_path = DEFAULT_TEMP_DIR
+    
+    return data_path, temp_path
 
 
 @dataclass
@@ -48,15 +73,24 @@ class StoragePaths:
     caches_dir: Path
 
 
-def ensure_session_dirs(user_id: str, session_id: str, base_dir: Path = DEFAULT_BASE_DIR) -> StoragePaths:
+def ensure_session_dirs(user_id: str, session_id: str, base_dir: Optional[Path] = None) -> StoragePaths:
+    if base_dir is None:
+        base_dir, _ = get_storage_paths()
+    
     base_dir = Path(base_dir)
     user_dir = base_dir / "users" / user_id
     session_dir = user_dir / "sessions" / session_id
     uploads_dir = session_dir / "uploads"
     caches_dir = session_dir / "caches"
     history_path = session_dir / "chat_history.jsonl"
+    
+    # Ensure directories exist with proper permissions
     for d in [user_dir, session_dir, uploads_dir, caches_dir]:
         d.mkdir(parents=True, exist_ok=True)
+        # Set restrictive permissions for production
+        if str(d).startswith('/var/lib') or str(d).startswith('/tmp'):
+            d.chmod(0o750)  # Owner: rwx, Group: rx, Others: none
+    
     return StoragePaths(
         base_dir=base_dir,
         user_dir=user_dir,
