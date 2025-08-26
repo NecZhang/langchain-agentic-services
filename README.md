@@ -85,7 +85,7 @@ POST /chat
 GET /config
 ```
 
-## �� Usage Examples
+## 🚀 Usage Examples
 
 ### **Text-Only Chat**
 ```bash
