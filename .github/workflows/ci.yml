@@ -35,12 +35,11 @@ jobs:
       run: |
         uv venv
         source .venv/bin/activate
-        uv pip install -r requirements.txt
+        uv sync --extra dev
     
     - name: Lint with flake8
       run: |
         source .venv/bin/activate
-        uv pip install flake8
         # Stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # Exit-zero treats all errors as warnings
@@ -49,7 +48,6 @@ jobs:
     - name: Type check with mypy
       run: |
         source .venv/bin/activate
-        uv pip install mypy
         mypy langchain_agent/ --ignore-missing-imports
     
     - name: Test imports and basic functionality

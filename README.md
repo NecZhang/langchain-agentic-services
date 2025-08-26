@@ -15,7 +15,7 @@ A professional, Chinese-first AI assistant service designed for enterprise docum
 
 1. **Install dependencies**
    ```bash
-   uv sync  # or pip install -r requirements.txt
+   uv sync  # Install all dependencies from pyproject.toml
    ```
 
 2. **Configure environment**
@@ -301,7 +301,7 @@ curl http://localhost:9510/config
 ### **Service Won't Start**
 1. Check vLLM server connectivity: `curl http://your-vllm:8002/v1/models`
 2. Verify environment variables: `cat .env`
-3. Check dependencies: `uv sync` or `pip install -r requirements.txt`
+3. Check dependencies: `uv sync` or `uv sync --extra dev` for development
 
 ### **File Processing Issues**
 1. Verify Tesseract: `tesseract --version`

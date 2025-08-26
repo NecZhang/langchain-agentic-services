@@ -15,7 +15,7 @@
 
 1. **安装依赖**
    ```bash
-   uv sync  # 或者 pip install -r requirements.txt
+   uv sync  # 从 pyproject.toml 安装所有依赖
    ```
 
 2. **配置环境**
@@ -301,7 +301,7 @@ curl http://localhost:9510/config
 ### **服务无法启动**
 1. 检查vLLM服务器连接: `curl http://your-vllm:8002/v1/models`
 2. 验证环境变量: `cat .env`
-3. 检查依赖: `uv sync` 或 `pip install -r requirements.txt`
+3. 检查依赖: `uv sync` 或 `uv sync --extra dev` 用于开发
 
 ### **文件处理问题**
 1. 验证Tesseract: `tesseract --version`

@@ -1,6 +1,6 @@
 ##
 # This file describes the project's metadata and dependencies in the
-# standard PEP 621 format.  It enables modern tooling such as uv to
+# standard PEP 621 format.  It enables modern tooling such as uv to
 # manage and install dependencies.  When using uv, you can add or
 # remove dependencies by editing the tables here or by running
 # commands like `uv add` and `uv remove`.  See the uv documentation
@@ -18,16 +18,19 @@ requires-python = ">=3.12"
 
 # Core runtime dependencies.  These are required for the agent to run.
 dependencies = [
-  "requests",
-  "scikit-learn",
-  "python-pptx",
-  "PyMuPDF",
-  "Pillow",
+  "requests>=2.31.0",
+  "scikit-learn>=1.7.1",
+  "python-pptx>=1.0.2",
+  "PyMuPDF>=1.26.3",
+  "Pillow>=11.3.0",
   "tqdm>=4.67.1",
   "fastapi>=0.116.1",
   "uvicorn>=0.35.0",
   "python-multipart>=0.0.20",
   "python-dotenv>=1.1.1",
+  "numpy>=2.3.2",
+  "scipy>=1.16.1",
+  "joblib>=1.5.1",
 ]
 
 # Optional dependencies.  These are not needed for the basic agent but
@@ -35,8 +38,15 @@ dependencies = [
 # support.  You can install them with `uv pip install .[extras]`.
 [project.optional-dependencies]
 extras = [
-  "python-docx",
-  "pytesseract"
+  "python-docx>=1.2.0",
+  "pytesseract>=0.3.13"
+]
+# Development dependencies for testing, linting, and code quality
+dev = [
+  "mypy>=1.5.0",
+  "black>=23.0.0",
+  "flake8>=6.0.0",
+  "pytest>=7.4.0"
 ]
 
 [build-system]
