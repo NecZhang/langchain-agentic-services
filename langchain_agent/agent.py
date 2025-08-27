@@ -10,10 +10,14 @@ an OpenAI‑compatible API (e.g., ``/v1/chat/completions`` endpoint).
 from __future__ import annotations
 
 import json
+import os
 from typing import Optional, List, Generator, Union
 
 import requests
 from tqdm import tqdm
+
+# Configuration constants
+DEFAULT_REQUEST_TIMEOUT = int(os.environ.get("AGENTIC_REQUEST_TIMEOUT", "30"))
 
 from .file_parser import parse_file
 from .intent_recognizer import detect_intent
@@ -122,7 +126,7 @@ class SimpleAgent:
     
     def _get_complete_response(self, url: str, headers: dict, payload: dict) -> str:
         """Get the complete response from the LLM."""
-        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=DEFAULT_REQUEST_TIMEOUT)
         try:
             response.raise_for_status()
         except Exception:
@@ -136,7 +140,7 @@ class SimpleAgent:
     
     def _stream_response(self, url: str, headers: dict, payload: dict):
         """Stream the response from the LLM."""
-        response = requests.post(url, headers=headers, data=json.dumps(payload), stream=True)
+        response = requests.post(url, headers=headers, data=json.dumps(payload), stream=True, timeout=DEFAULT_REQUEST_TIMEOUT)
         try:
             response.raise_for_status()
         except Exception:

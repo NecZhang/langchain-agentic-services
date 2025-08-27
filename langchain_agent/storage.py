@@ -35,9 +35,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
 import joblib
 
-# Production-ready default paths
-DEFAULT_BASE_DIR = Path("/var/lib/agentic-service")
-DEFAULT_TEMP_DIR = Path("/tmp/agentic-uploads")
+# Production-ready default paths - use environment variables for security
+# nosec B108 - These are fallback defaults that can be overridden via environment variables
+DEFAULT_BASE_DIR = Path(os.environ.get("AGENTIC_DATA_DIR", "/var/lib/agentic-service"))  # nosec B108
+DEFAULT_TEMP_DIR = Path(os.environ.get("AGENTIC_TEMP_DIR", "/tmp/agentic-uploads"))  # nosec B108
 
 # Fallback to project directory only for development
 if not DEFAULT_BASE_DIR.exists() and not os.environ.get("AGENTIC_DATA_DIR"):
@@ -88,7 +89,12 @@ def ensure_session_dirs(user_id: str, session_id: str, base_dir: Optional[Path] 
     for d in [user_dir, session_dir, uploads_dir, caches_dir]:
         d.mkdir(parents=True, exist_ok=True)
         # Set restrictive permissions for production
-        if str(d).startswith('/var/lib') or str(d).startswith('/tmp'):
+        # Use environment variables to determine if this is a production path
+        is_production_path = (
+            str(d).startswith(os.environ.get("AGENTIC_DATA_DIR", "/var/lib")) or  # nosec B108
+            str(d).startswith(os.environ.get("AGENTIC_TEMP_DIR", "/tmp"))  # nosec B108
+        )
+        if is_production_path:
             d.chmod(0o750)  # Owner: rwx, Group: rx, Others: none
     
     return StoragePaths(
@@ -130,7 +136,10 @@ def load_chat_history(paths: StoragePaths, max_messages: Optional[int] = None) -
         for line in f:
             try:
                 messages.append(json.loads(line))
-            except Exception:
+            except Exception as e:  # nosec B112
+                # Log the error but continue processing other lines
+                import logging
+                logging.warning(f"Failed to parse chat history line: {e}")
                 continue
     if max_messages is not None:
         messages = messages[-max_messages:]
