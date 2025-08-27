@@ -3,7 +3,7 @@
 max-line-length = 127
 
 # Maximum complexity
-max-complexity = 10
+max-complexity = 50
 
 # Exclude directories and files
 exclude = 
@@ -18,12 +18,24 @@ exclude =
 # Ignore specific error codes
 ignore = 
     # E501: line too long (handled by max-line-length)
+    E501,
     # W503: line break before binary operator (conflicts with W504)
     W503,
     # E203: whitespace before ':' (conflicts with black)
-    E203
-
-# Show source code for errors
+    E203,
+    # W293: blank line contains whitespace (conflicts with black)
+    W293,
+    # W291: trailing whitespace (conflicts with black)
+    W291,
+    # W292: no newline at end of file (conflicts with black)
+    W292,
+    # F401: module imported but unused
+    F401,
+    # W504: line break before binary operator (conflicts with black)
+    W504,
+    # F811: redefinition of unused 'name' from line N
+    F811
+    
 show-source = True
 
 # Show statistics

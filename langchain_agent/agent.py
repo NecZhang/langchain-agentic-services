@@ -16,9 +16,6 @@ from typing import Optional, List
 import requests
 from tqdm import tqdm
 
-# Configuration constants
-DEFAULT_REQUEST_TIMEOUT = int(os.environ.get("AGENTIC_REQUEST_TIMEOUT", "30"))
-
 from .file_parser import parse_file
 from .intent_recognizer import detect_intent
 from .rag_utils import RAGRetriever
@@ -38,11 +35,10 @@ from .storage import (
     get_last_doc_key,
     get_all_cached_documents,
 )
-from .language_utils import (
-    detect_language,
-    get_system_prompt,
-    get_processing_message,
-)
+from .language_utils import detect_language, get_system_prompt, get_processing_message
+
+# Configuration constant *after* imports
+DEFAULT_REQUEST_TIMEOUT = int(os.environ.get("AGENTIC_REQUEST_TIMEOUT", "30"))
 
 __all__ = ["SimpleAgent"]
 

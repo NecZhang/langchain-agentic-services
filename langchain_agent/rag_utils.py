@@ -17,6 +17,8 @@ from typing import List, Tuple, Optional
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
 
+from dataclasses import dataclass
+
 __all__ = ["chunk_text", "RAGRetriever"]
 
 
