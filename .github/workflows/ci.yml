@@ -68,23 +68,28 @@ jobs:
         source .venv/bin/activate
         uv sync --extra dev
     
+    - name: Verify virtual environment
+      run: |
+        echo "🔍 Checking virtual environment:"
+        ls -la .venv/bin/
+        echo "📦 Checking installed packages:"
+        .venv/bin/python -m pip list --format=columns
+        echo "✅ Virtual environment ready"
+    
     - name: Lint with flake8
       run: |
-        source .venv/bin/activate
-        # Stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Use the full path to python from the virtual environment
+        .venv/bin/python -m flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # Exit-zero treats all errors as warnings
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        .venv/bin/python -m flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     
     - name: Type check with mypy
       run: |
-        source .venv/bin/activate
-        mypy langchain_agent/ --ignore-missing-imports
+        .venv/bin/python -m mypy langchain_agent/ --ignore-missing-imports
     
     - name: Test imports and basic functionality
       run: |
-        source .venv/bin/activate
-        python -c "
+        .venv/bin/python -c "
         from langchain_agent.agent import SimpleAgent
         from langchain_agent.language_utils import detect_language, get_system_prompt
         from langchain_agent.file_parser import parse_file
@@ -126,9 +131,8 @@ jobs:
     
     - name: Run security scan
       run: |
-        source .venv/bin/activate
-        bandit -r langchain_agent/
-        safety check --json
+        .venv/bin/python -m bandit -r langchain_agent/
+        .venv/bin/python -m safety check --json
 
   build-docs:
     runs-on: ubuntu-latest
@@ -153,7 +157,6 @@ jobs:
     
     - name: Validate documentation
       run: |
-        source .venv/bin/activate
         # Check if required documentation exists
         test -f README.md
         test -f README_CN.md
