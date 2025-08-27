@@ -118,12 +118,12 @@ class SimpleAgent:
             "messages": messages,
             "stream": stream,
         }
-        
+
         if stream:
             return self._stream_response(url, headers, payload)
         else:
             return self._get_complete_response(url, headers, payload)
-    
+
     def _get_complete_response(self, url: str, headers: dict, payload: dict) -> str:
         """Get the complete response from the LLM."""
         response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=DEFAULT_REQUEST_TIMEOUT)
@@ -137,7 +137,7 @@ class SimpleAgent:
         if not choices:
             raise RuntimeError("LLM did not return any choices")
         return choices[0]["message"]["content"]
-    
+
     def _stream_response(self, url: str, headers: dict, payload: dict):
         """Stream the response from the LLM."""
         response = requests.post(url, headers=headers, data=json.dumps(payload), stream=True, timeout=DEFAULT_REQUEST_TIMEOUT)
@@ -146,13 +146,13 @@ class SimpleAgent:
         except Exception:
             # propagate the error with more context
             raise RuntimeError(f"LLM request failed with status {response.status_code}: {response.text}")
-        
+
         for line in response.iter_lines():
             if line:
-                line = line.decode('utf-8')
-                if line.startswith('data: '):
+                line = line.decode("utf-8")
+                if line.startswith("data: "):
                     data = line[6:]  # Remove 'data: ' prefix
-                    if data == '[DONE]':
+                    if data == "[DONE]":
                         break
                     try:
                         json_data = json.loads(data)
@@ -165,7 +165,9 @@ class SimpleAgent:
     # -----------------------------------------------------------------
     # High level tasks
     #
-    def _translate(self, text: str, target_language: str = "Chinese", stream: bool = False, detected_language: str = 'Chinese'):
+    def _translate(
+        self, text: str, target_language: str = "Chinese", stream: bool = False, detected_language: str = "Chinese"
+    ):
         """Translate a block of text into the target language.
 
         The request is made in a single call to the LLM.  A system
@@ -189,7 +191,7 @@ class SimpleAgent:
             If stream=True: A generator yielding translation chunks.
         """
         # Use bilingual system prompt based on detected language
-        if detected_language == 'Chinese':
+        if detected_language == "Chinese":
             system_prompt = f"你是一个专业的翻译专家。请将以下文本翻译成{target_language}。保持原有的格式和结构。"
             user_content = f"请翻译以下文本：\n\n{text}"
         else:
@@ -202,7 +204,14 @@ class SimpleAgent:
         ]
         return self._call_llm(messages, stream=stream)
 
-    def _qa(self, question: str, docs: List[str], stream: bool = False, history: Optional[List[dict]] = None, detected_language: str = 'Chinese'):
+    def _qa(
+        self,
+        question: str,
+        docs: List[str],
+        stream: bool = False,
+        history: Optional[List[dict]] = None,
+        detected_language: str = "Chinese",
+    ):
         """Answer a question given a list of context documents.
 
         This method concatenates the provided documents into a single
@@ -241,10 +250,10 @@ class SimpleAgent:
                 content = h.get("content", "")
                 if content:
                     messages.append({"role": role, "content": content})
-        
+
         # Add the enhanced RAG prompt with source attribution
         if context:
-            if detected_language == 'Chinese':
+            if detected_language == "Chinese":
                 prompt = f"""基于提供的文档内容，请回答以下问题：{question}
 
 ## 文档内容：
@@ -269,7 +278,7 @@ class SimpleAgent:
 4. **Structured response**: Use clear headings and bullet points to organize your answer
 5. **Risk alerts**: Provide necessary warnings for decision-related questions"""
         else:
-            if detected_language == 'Chinese':
+            if detected_language == "Chinese":
                 prompt = f"""请基于你的知识回答以下问题：{question}
 
 ## 回答要求：
@@ -289,9 +298,9 @@ class SimpleAgent:
         messages.append({"role": "user", "content": prompt})
         return self._call_llm(messages, stream=stream)
 
-    def _summarize(self, text: str, stream: bool = False, detected_language: str = 'Chinese'):
+    def _summarize(self, text: str, stream: bool = False, detected_language: str = "Chinese"):
         """Summarize a document or text block with enterprise focus."""
-        if detected_language == 'Chinese':
+        if detected_language == "Chinese":
             system_prompt = """你是一个专业的企业文档总结专家。请创建结构化、全面的文档摘要，突出关键要点、主要观点和重要细节。
 
 总结要求：
@@ -311,7 +320,7 @@ Summary requirements:
 - Mark important risk factors or decision elements
 - Use professional business language"""
             user_content = f"Please provide a professional summary of the following document:\n\n{text}"
-        
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
@@ -351,12 +360,12 @@ Summary requirements:
             "and highlight key similarities, differences, and unique aspects. "
             "Structure your comparison clearly with specific examples."
         )
-        
+
         # Combine texts with clear separators
         combined_text = ""
         for i, text in enumerate(texts, 1):
             combined_text += f"\n\n--- Document {i} ---\n{text}"
-        
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Compare these documents focusing on: {query}\n{combined_text}"},
@@ -366,7 +375,15 @@ Summary requirements:
     # -----------------------------------------------------------------
     # Public interface
     #
-    def run(self, query: str, file_path: Optional[str] = None, target_language: str = "Chinese", stream: bool = False, user_id: Optional[str] = None, session_id: Optional[str] = None):
+    def run(
+        self,
+        query: str,
+        file_path: Optional[str] = None,
+        target_language: str = "Chinese",
+        stream: bool = False,
+        user_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+    ):
         """Process a user query with an optional attached file.
 
         This is the main entry point for the agent.  It determines the
@@ -405,10 +422,10 @@ Summary requirements:
         """
         # Detect language from query for appropriate messaging
         detected_language = detect_language(query)
-        
+
         # Parse the file if one is supplied
         file_text = None
-        file_ext = 'txt'
+        file_ext = "txt"
         storage_paths = None
         if user_id and session_id:
             storage_paths = ensure_session_dirs(user_id=user_id, session_id=session_id)
@@ -417,32 +434,32 @@ Summary requirements:
         # Load recent chat history for prompt context
         recent_history = load_chat_history(storage_paths, max_messages=12) if storage_paths else None
         if file_path:
-            print(get_processing_message('parsing', detected_language, filename=file_path))
+            print(get_processing_message("parsing", detected_language, filename=file_path))
             if storage_paths:
                 # Copy upload to session folder
                 uploaded_path = copy_upload(storage_paths, file_path)
                 file_path = str(uploaded_path)
             file_text = parse_file(file_path)
-            print(get_processing_message('parsed', detected_language, chars=len(file_text)))
+            print(get_processing_message("parsed", detected_language, chars=len(file_text)))
             file_ext = get_file_type(file_path)
-        
+
         # Determine intent from the query
         intent = detect_intent(query)
         if intent == "translate":
             if not file_text:
                 raise ValueError("Translation tasks require an attached file with content.")
-            
+
             # Get file extension for file-type aware chunking
-            
+
             # Create translation-optimized chunking config
             translation_config = ChunkingConfig(
                 mode=ChunkingMode.TRANSLATION,
                 max_chars=self.max_context_tokens * 4,  # Large chunks for translation
                 overlap=200,
                 respect_sentences=True,
-                respect_paragraphs=True
+                respect_paragraphs=True,
             )
-            
+
             print(f"✂️  Chunking text using {file_ext.upper()} optimized strategy...")
             # Cache by file hash + mode
             doc_hash = compute_file_hash(file_path) if file_path else "nofile"
@@ -452,11 +469,13 @@ Summary requirements:
                 print(f"📦 Loaded {len(cached_chunks)} cached chunks")
                 chunks = cached_chunks
             else:
-                chunks = chunk_document(file_text, file_type=file_ext, mode=ChunkingMode.TRANSLATION, config=translation_config)
+                chunks = chunk_document(
+                    file_text, file_type=file_ext, mode=ChunkingMode.TRANSLATION, config=translation_config
+                )
                 if storage_paths:
                     save_chunks(storage_paths, key, chunks)
             print(f"📊 Created {len(chunks)} semantic chunks for translation")
-            
+
             if stream:
                 # For streaming, we need to handle chunked translation differently
                 # Since we can't easily stream multiple chunks, we'll concatenate and stream
@@ -472,16 +491,16 @@ Summary requirements:
         elif intent == "summarize":
             if not file_text:
                 raise ValueError("Summarization tasks require an attached file with content.")
-            
+
             # Create summarization-optimized chunking config
             summary_config = ChunkingConfig(
                 mode=ChunkingMode.SUMMARIZATION,
                 max_chars=30_000,  # Large chunks for better context
                 overlap=200,
                 respect_sentences=True,
-                respect_paragraphs=True
+                respect_paragraphs=True,
             )
-            
+
             print(f"✂️  Chunking text for summarization...")
             doc_hash = compute_file_hash(file_path) if file_path else "nofile"
             key = cache_key(doc_hash, "summarization")
@@ -493,24 +512,24 @@ Summary requirements:
                 chunks = chunk_document(file_text, file_type=file_ext, mode=ChunkingMode.SUMMARIZATION, config=summary_config)
                 if storage_paths:
                     save_chunks(storage_paths, key, chunks)
-            
+
             # Summarize each chunk and combine
             all_text = "\n\n".join(chunks)
             return self._summarize(all_text, stream=stream)
-            
+
         elif intent == "analyze":
             if not file_text:
                 raise ValueError("Analysis tasks require an attached file with content.")
-            
+
             # Create analysis-optimized chunking config
             analysis_config = ChunkingConfig(
                 mode=ChunkingMode.ANALYSIS,
                 max_chars=25_000,  # Medium chunks for balanced analysis
                 overlap=200,
                 respect_sentences=True,
-                respect_paragraphs=True
+                respect_paragraphs=True,
             )
-            
+
             print(f"✂️  Chunking text for analysis...")
             doc_hash = compute_file_hash(file_path) if file_path else "nofile"
             key = cache_key(doc_hash, "analysis")
@@ -522,24 +541,24 @@ Summary requirements:
                 chunks = chunk_document(file_text, file_type=file_ext, mode=ChunkingMode.ANALYSIS, config=analysis_config)
                 if storage_paths:
                     save_chunks(storage_paths, key, chunks)
-            
+
             # Analyze the combined text
             all_text = "\n\n".join(chunks)
             return self._analyze(all_text, stream=stream)
-            
+
         elif intent == "extract":
             if not file_text:
                 raise ValueError("Extraction tasks require an attached file with content.")
-            
+
             # Create extraction-optimized chunking config
             extract_config = ChunkingConfig(
                 mode=ChunkingMode.EXTRACTION,
                 max_chars=15_000,  # Small chunks for precise extraction
                 overlap=100,
                 respect_sentences=True,
-                respect_paragraphs=True
+                respect_paragraphs=True,
             )
-            
+
             print(f"✂️  Chunking text for extraction...")
             doc_hash = compute_file_hash(file_path) if file_path else "nofile"
             key = cache_key(doc_hash, "extraction")
@@ -551,54 +570,56 @@ Summary requirements:
                 chunks = chunk_document(file_text, file_type=file_ext, mode=ChunkingMode.EXTRACTION, config=extract_config)
                 if storage_paths:
                     save_chunks(storage_paths, key, chunks)
-            
+
             # Extract from the combined text
             all_text = "\n\n".join(chunks)
             return self._extract(all_text, query, stream=stream)
-            
+
         elif intent == "compare":
             # For comparison, we can use current file + cached documents, or just cached documents
             texts = []
-            
+
             # Add current file if provided
             if file_text:
                 texts.append(file_text)
-            
+
             # Add all cached documents from the session
             if storage_paths:
                 cached_docs = get_all_cached_documents(storage_paths)
                 for doc_key, chunks in cached_docs:
                     cached_text = "\n\n".join(chunks)
                     texts.append(cached_text)
-            
+
             # Need at least one document to compare
             if not texts:
-                raise ValueError("Comparison tasks require at least one document. Please upload a file or use documents from previous conversation turns.")
-            
+                raise ValueError(
+                    "Comparison tasks require at least one document. Please upload a file or use documents from previous conversation turns."
+                )
+
             # If only one document, inform the user but still proceed
             if len(texts) == 1:
                 print("📄 Only one document available for comparison. Proceeding with analysis of this single document.")
             else:
                 print(f"📊 Comparing {len(texts)} documents from current upload and session history.")
-            
+
             return self._compare(texts, query, stream=stream)
-        
+
         else:
             # For QA tasks, build a small corpus from the file (if present).
             context_docs: List[str] = []
             if file_text:
                 # Get file extension for file-type aware chunking
                 file_ext = get_file_type(file_path)
-                
+
                 # Create RAG-optimized chunking config
                 rag_config = ChunkingConfig(
                     mode=ChunkingMode.RAG,
                     max_chars=20_000,  # Small chunks for retrieval
                     overlap=200,
                     respect_sentences=True,
-                    respect_paragraphs=True
+                    respect_paragraphs=True,
                 )
-                
+
                 print(f"✂️  Preparing {file_ext.upper()} chunks for question answering...")
                 doc_hash = compute_file_hash(file_path)
                 key = cache_key(doc_hash, "rag")
@@ -651,6 +672,7 @@ Summary requirements:
                 print("🔄 Streaming answer...")
             stream_iter = self._qa(query, context_docs, stream=stream, history=recent_history)
             if storage_paths:
+
                 def _wrap_stream_and_persist():
                     buffer_parts: List[str] = []
                     for chunk in stream_iter:
@@ -658,6 +680,7 @@ Summary requirements:
                         yield chunk
                     full_answer = "".join(buffer_parts)
                     append_chat_message(storage_paths, role="assistant", content=full_answer)
+
                 return _wrap_stream_and_persist()
             else:
                 return stream_iter

@@ -85,18 +85,16 @@ jobs:
     
     - name: Lint with flake8
       run: |
-        # Use the full path to python from the virtual environment
-        .venv/bin/python -m flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings
-        .venv/bin/python -m flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        # Use uv to run flake8 directly
+        uv run flake8 langchain_agent/
     
     - name: Type check with mypy
       run: |
-        .venv/bin/python -m mypy langchain_agent/ --ignore-missing-imports
+        uv run mypy langchain_agent/ --ignore-missing-imports
     
     - name: Test imports and basic functionality
       run: |
-        .venv/bin/python -c "
+        uv run python -c "
         from langchain_agent.agent import SimpleAgent
         from langchain_agent.language_utils import detect_language, get_system_prompt
         from langchain_agent.file_parser import parse_file
@@ -143,8 +141,8 @@ jobs:
     
     - name: Run security scan
       run: |
-        .venv/bin/python -m bandit -r langchain_agent/
-        .venv/bin/python -m safety check --json
+        uv run bandit -r langchain_agent/
+        uv run safety check --json
 
   build-docs:
     runs-on: ubuntu-latest

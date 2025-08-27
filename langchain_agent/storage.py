@@ -46,21 +46,22 @@ if not DEFAULT_BASE_DIR.exists() and not os.environ.get("AGENTIC_DATA_DIR"):
 if not DEFAULT_TEMP_DIR.exists() and not os.environ.get("AGENTIC_TEMP_DIR"):
     DEFAULT_TEMP_DIR = Path(".tmp_uploads")
 
+
 def get_storage_paths() -> Tuple[Path, Path]:
     """Get configured storage paths from environment variables."""
     data_dir = os.environ.get("AGENTIC_DATA_DIR")
     temp_dir = os.environ.get("AGENTIC_TEMP_DIR")
-    
+
     if data_dir:
         data_path = Path(data_dir)
     else:
         data_path = DEFAULT_BASE_DIR
-        
+
     if temp_dir:
         temp_path = Path(temp_dir)
     else:
         temp_path = DEFAULT_TEMP_DIR
-    
+
     return data_path, temp_path
 
 
@@ -77,26 +78,27 @@ class StoragePaths:
 def ensure_session_dirs(user_id: str, session_id: str, base_dir: Optional[Path] = None) -> StoragePaths:
     if base_dir is None:
         base_dir, _ = get_storage_paths()
-    
+
     base_dir = Path(base_dir)
     user_dir = base_dir / "users" / user_id
     session_dir = user_dir / "sessions" / session_id
     uploads_dir = session_dir / "uploads"
     caches_dir = session_dir / "caches"
     history_path = session_dir / "chat_history.jsonl"
-    
+
     # Ensure directories exist with proper permissions
     for d in [user_dir, session_dir, uploads_dir, caches_dir]:
         d.mkdir(parents=True, exist_ok=True)
         # Set restrictive permissions for production
         # Use environment variables to determine if this is a production path
-        is_production_path = (
-            str(d).startswith(os.environ.get("AGENTIC_DATA_DIR", "/var/lib")) or  # nosec B108
-            str(d).startswith(os.environ.get("AGENTIC_TEMP_DIR", "/tmp"))  # nosec B108
-        )
+        is_production_path = str(d).startswith(os.environ.get("AGENTIC_DATA_DIR", "/var/lib")) or str(  # nosec B108
+            d
+        ).startswith(
+            os.environ.get("AGENTIC_TEMP_DIR", "/tmp")
+        )  # nosec B108
         if is_production_path:
             d.chmod(0o750)  # Owner: rwx, Group: rx, Others: none
-    
+
     return StoragePaths(
         base_dir=base_dir,
         user_dir=user_dir,
@@ -139,6 +141,7 @@ def load_chat_history(paths: StoragePaths, max_messages: Optional[int] = None) -
             except Exception as e:  # nosec B112
                 # Log the error but continue processing other lines
                 import logging
+
                 logging.warning(f"Failed to parse chat history line: {e}")
                 continue
     if max_messages is not None:
@@ -170,7 +173,9 @@ def load_chunks(paths: StoragePaths, key: str) -> Optional[List[str]]:
         return json.load(f)
 
 
-def save_retriever(paths: StoragePaths, key: str, vectorizer: TfidfVectorizer, doc_vectors: sparse.csr_matrix, nn: NearestNeighbors) -> None:
+def save_retriever(
+    paths: StoragePaths, key: str, vectorizer: TfidfVectorizer, doc_vectors: sparse.csr_matrix, nn: NearestNeighbors
+) -> None:
     d = cache_dir_for(paths, key)
     joblib.dump(vectorizer, d / "tfidf_vectorizer.joblib")
     sparse.save_npz(d / "doc_vectors.npz", doc_vectors)
@@ -213,7 +218,7 @@ def get_last_doc_key(paths: StoragePaths) -> Optional[str]:
 
 def get_all_cached_documents(paths: StoragePaths) -> List[Tuple[str, List[str]]]:
     """Get all cached documents from the session.
-    
+
     Returns
     -------
     List[Tuple[str, List[str]]]
@@ -222,7 +227,7 @@ def get_all_cached_documents(paths: StoragePaths) -> List[Tuple[str, List[str]]]
     cached_docs = []
     if not paths.caches_dir.exists():
         return cached_docs
-    
+
     # Iterate through all cache directories
     for cache_dir in paths.caches_dir.iterdir():
         if cache_dir.is_dir():
@@ -235,5 +240,5 @@ def get_all_cached_documents(paths: StoragePaths) -> List[Tuple[str, List[str]]]
                 except (json.JSONDecodeError, IOError):
                     # Skip corrupted cache files
                     continue
-    
+
     return cached_docs

@@ -147,19 +147,17 @@ def _parse_docx_file(path: str) -> str:
     try:
         from docx import Document
     except ImportError:
-        raise NotImplementedError(
-            "DOC/DOCX parsing requires python-docx to be installed."
-        )
-    
+        raise NotImplementedError("DOC/DOCX parsing requires python-docx to be installed.")
+
     doc = Document(path)
     parts = []
-    
+
     # Extract text from paragraphs
     for paragraph in doc.paragraphs:
         text = paragraph.text.strip()
         if text:
             parts.append(text)
-    
+
     # Extract text from tables
     for table in doc.tables:
         for row in table.rows:
@@ -170,7 +168,7 @@ def _parse_docx_file(path: str) -> str:
                     row_text.append(cell_text)
             if row_text:
                 parts.append(" | ".join(row_text))
-    
+
     return "\n\n".join(parts)
 
 
@@ -195,10 +193,8 @@ def _parse_image_file(path: str) -> str:
         import pytesseract
         from PIL import Image
     except ImportError:
-        raise NotImplementedError(
-            "Image OCR requires pytesseract and Pillow to be installed."
-        )
-    
+        raise NotImplementedError("Image OCR requires pytesseract and Pillow to be installed.")
+
     try:
         # Open the image and extract text
         image = Image.open(path)

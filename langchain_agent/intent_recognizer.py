@@ -34,51 +34,92 @@ def detect_intent(query: str) -> Literal["translate", "qa", "summarize", "analyz
         The detected intent.
     """
     q = (query or "").lower()
-    
+
     # Translation markers
     translation_markers = [
-        "translate", "translation", "translate this", "translate the file", 
-        "please translate", "convert to", "in english", "in chinese"
+        "translate",
+        "translation",
+        "translate this",
+        "translate the file",
+        "please translate",
+        "convert to",
+        "in english",
+        "in chinese",
     ]
     for marker in translation_markers:
         if marker in q:
             return "translate"
-    
+
     # Summarization markers
     summarization_markers = [
-        "summarize", "summary", "summarise", "key points", "main points",
-        "executive summary", "brief", "overview", "gist", "essence"
+        "summarize",
+        "summary",
+        "summarise",
+        "key points",
+        "main points",
+        "executive summary",
+        "brief",
+        "overview",
+        "gist",
+        "essence",
     ]
     for marker in summarization_markers:
         if marker in q:
             return "summarize"
-    
+
     # Analysis markers
     analysis_markers = [
-        "analyze", "analyse", "analysis", "insights", "trends", "patterns",
-        "examine", "evaluate", "assess", "review", "interpret", "findings"
+        "analyze",
+        "analyse",
+        "analysis",
+        "insights",
+        "trends",
+        "patterns",
+        "examine",
+        "evaluate",
+        "assess",
+        "review",
+        "interpret",
+        "findings",
     ]
     for marker in analysis_markers:
         if marker in q:
             return "analyze"
-    
+
     # Extraction markers
     extraction_markers = [
-        "extract", "find all", "list all", "get all", "identify",
-        "pull out", "collect", "gather", "retrieve", "locate"
+        "extract",
+        "find all",
+        "list all",
+        "get all",
+        "identify",
+        "pull out",
+        "collect",
+        "gather",
+        "retrieve",
+        "locate",
     ]
     for marker in extraction_markers:
         if marker in q:
             return "extract"
-    
+
     # Comparison markers
     comparison_markers = [
-        "compare", "comparison", "contrast", "difference", "differences",
-        "similar", "similarities", "versus", "vs", "against", "between"
+        "compare",
+        "comparison",
+        "contrast",
+        "difference",
+        "differences",
+        "similar",
+        "similarities",
+        "versus",
+        "vs",
+        "against",
+        "between",
     ]
     for marker in comparison_markers:
         if marker in q:
             return "compare"
-    
+
     # Default to Q&A
     return "qa"
