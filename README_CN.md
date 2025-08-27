@@ -85,6 +85,214 @@ POST /chat
 GET /config
 ```
 
+## 🔧 完整API参数参考
+
+### **📝 主要聊天接口: `/chat`**
+
+#### **必需参数:**
+- **`query`** (字符串, 必需)
+  - **描述**: 用户的输入消息或请求
+  - **示例**: 
+    - `"翻译这个文档为英文"`
+    - `"什么是人工智能？"`
+    - `"请分析这个文档"`
+    - `"总结关键要点"`
+
+#### **可选参数:**
+
+##### **文件上传:**
+- **`files`** (文件, 可选)
+  - **描述**: 要处理的文档文件 (PDF、Word、PowerPoint、图片、文本)
+  - **支持格式**: 
+    - **文档**: `.pdf`, `.docx`, `.doc`, `.pptx`, `.ppt`
+    - **图片**: `.jpg`, `.jpeg`, `.png`, `.bmp`, `.tiff` (带OCR)
+    - **文本**: `.txt`, `.md`
+    - **电子表格**: `.xlsx`, `.xls`
+  - **最大大小**: 可配置 (默认: 50MB)
+  - **用法**: `-F files=@文档.pdf`
+
+##### **用户和会话管理:**
+- **`user`** (字符串, 可选)
+  - **描述**: 用户的唯一标识符
+  - **用途**: 启用每用户存储、聊天历史和文档缓存
+  - **示例**: `"张三"`, `"翻译员"`, `"分析师001"`
+  - **默认**: 匿名用户 (无持久存储)
+
+- **`session`** (字符串, 可选)
+  - **描述**: 聊天会话标识符
+  - **用途**: 分组对话并在多个请求中维护上下文
+  - **示例**: `"会议_2024"`, `"项目_阿尔法"`, `"日常聊天"`
+  - **默认**: 每用户单会话
+
+##### **翻译控制:**
+- **`target_language`** (字符串, 可选)
+  - **描述**: 翻译任务的目标语言
+  - **支持语言**: 
+    - **英文**: `"english"`, `"en"`, `"英文"`
+    - **中文**: `"chinese"`, `"zh"`, `"中文"`
+    - **日文**: `"japanese"`, `"ja"`, `"日语"`
+    - **韩文**: `"korean"`, `"ko"`, `"韩语"`
+    - **法文**: `"french"`, `"fr"`
+    - **德文**: `"german"`, `"de"`
+    - **西班牙文**: `"spanish"`, `"es"`
+    - **俄文**: `"russian"`, `"ru"`
+  - **默认**: `"English"`
+  - **自动检测**: 系统自动检测源语言并确定翻译方向
+
+##### **流式控制:**
+- **`stream`** (布尔值, 可选)
+  - **描述**: 启用实时流式响应
+  - **值**: `true` 或 `false`
+  - **默认**: `false`
+  - **优势**: 
+    - 逐字符输出
+    - 实时响应
+    - 更好的用户体验
+  - **网络优化**: 包含特殊头部以实现网络上的平滑流式传输
+
+### **⚙️ 配置信息接口: `/config`**
+
+#### **响应参数:**
+- **`server_info`**
+  - **`host`**: 服务器主机地址
+  - **`port`**: 服务器端口号
+  - **`version`**: API版本
+
+- **`vllm_config`**
+  - **`endpoint`**: vLLM服务器URL
+  - **`model`**: 活跃的LLM模型名称
+  - **`status`**: 连接状态
+
+- **`streaming`**
+  - **`enabled`**: 流式传输是否可用
+  - **`char_by_char`**: 字符级流式传输模式
+  - **`small_chunks`**: 强制小块处理
+  - **`network_optimized`**: 网络流式传输优化
+  - **`debug_logging`**: 调试信息控制
+
+- **`storage`**
+  - **`data_directory`**: 主数据存储位置
+  - **`temp_directory`**: 临时上传位置
+  - **`user_isolation`**: 用户数据分离状态
+
+### **🔧 环境配置参数**
+
+#### **服务器配置:**
+```bash
+# 服务器设置
+HOST=0.0.0.0                    # 服务器主机 (默认: 0.0.0.0)
+PORT=9510                        # 服务器端口 (默认: 9510)
+
+# vLLM连接
+VLLM_ENDPOINT=http://192.168.6.10:8002  # vLLM服务器URL
+VLLM_MODEL=Qwen/Qwen3-32B-FP8   # LLM模型名称
+AGENTIC_REQUEST_TIMEOUT=30       # 请求超时秒数
+```
+
+#### **流式传输配置:**
+```bash
+# 流式传输行为
+STREAM_CHAR_BY_CHAR=true         # 启用逐字符流式传输
+FORCE_SMALL_CHUNKS=true          # 强制小块处理
+NETWORK_STREAMING_OPTIMIZED=true # 网络流式传输优化
+DEBUG_STREAMING=false            # 控制调试日志
+```
+
+#### **存储配置:**
+```bash
+# 数据存储路径
+AGENTIC_DATA_DIR=.data           # 主数据目录 (开发环境)
+AGENTIC_TEMP_DIR=.tmp_uploads    # 临时上传目录
+```
+
+### **📊 API响应参数**
+
+#### **成功响应:**
+- **`status`**: `"success"`
+- **`data`**: 响应内容 (根据任务类型变化)
+- **`metadata`**: 任务信息和处理详情
+
+#### **流式响应:**
+- **Content-Type**: `text/plain; charset=utf-8`
+- **头部**: 
+  - `Cache-Control: no-cache, no-store, must-revalidate`
+  - `X-Accel-Buffering: no` (禁用nginx缓冲)
+  - `Transfer-Encoding: chunked`
+
+#### **错误响应:**
+- **`status`**: `"error"`
+- **`error`**: 错误消息
+- **`details`**: 额外错误信息
+
+### **🎯 任务特定参数**
+
+#### **翻译任务:**
+- **意图检测**: 从查询自动检测
+- **语言检测**: 自动源语言检测
+- **方向逻辑**: 智能翻译方向确定
+- **格式保持**: 保持原始文档结构
+
+#### **问答任务:**
+- **上下文检索**: 使用RAG (检索增强生成)
+- **文档分块**: 智能文本分割
+- **来源归属**: 引用源文档
+- **历史上下文**: 包含可用时的聊天历史
+
+#### **分析任务:**
+- **文档处理**: 支持多种文件格式
+- **分块策略**: 任务优化的文本分割
+- **缓存**: 智能结果缓存以提高性能
+
+### ** 高级使用示例**
+
+#### **网络流式传输 (远程客户端):**
+```bash
+# 为了在网络上的平滑流式传输，使用 --no-buffer
+curl -X POST http://192.168.6.19:9510/chat \
+  -F query='翻译这个文档为英文' \
+  -F user='翻译员' \
+  -F files=@文档.pdf \
+  -F stream=true \
+  --no-buffer
+```
+
+#### **多语言翻译:**
+```bash
+# 中文到英文
+curl -X POST http://localhost:9510/chat \
+  -F query='翻译为英文' \
+  -F user='翻译员' \
+  -F files=@中文文档.pdf
+
+# 英文到中文
+curl -X POST http://localhost:9510/chat \
+  -F query='翻译为中文' \
+  -F user='翻译员' \
+  -F files=@英文文档.pdf
+```
+
+#### **基于会话的工作流程:**
+```bash
+# 步骤1: 上传文档
+curl -X POST http://localhost:9510/chat \
+  -F query='上传这篇研究论文' \
+  -F user='研究员' \
+  -F session='论文分析' \
+  -F files=@研究.pdf
+
+# 步骤2: 询问关于文档的问题
+curl -X POST http://localhost:9510/chat \
+  -F query='主要发现是什么？' \
+  -F user='研究员' \
+  -F session='论文分析'
+
+# 步骤3: 翻译对话
+curl -X POST http://localhost:9510/chat \
+  -F query='将我们的对话翻译为中文' \
+  -F user='研究员' \
+  -F session='论文分析'
+```
+
 ## 🚀 使用示例
 
 ### **纯文本聊天**

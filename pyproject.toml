@@ -31,15 +31,15 @@ dependencies = [
   "numpy>=2.3.2",
   "scipy>=1.16.1",
   "joblib>=1.5.1",
-]
-
-# Optional dependencies.  These are not needed for the basic agent but
-# enable additional file formats (e.g. Word documents) and OCR
-# support.  You can install them with `uv pip install .[extras]`.
-[project.optional-dependencies]
-extras = [
   "python-docx>=1.2.0",
   "pytesseract>=0.3.13"
+]
+
+# Optional dependencies for additional functionality
+[project.optional-dependencies]
+extras = [
+  "openpyxl>=3.1.0",
+  "xlrd>=2.0.1"
 ]
 # Development dependencies for testing, linting, and code quality
 dev = [

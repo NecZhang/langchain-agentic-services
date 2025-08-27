@@ -109,7 +109,19 @@ async def unified_chat(
                 session_id=session
             ):
                 yield chunk
-        return StreamingResponse(generator(), media_type="text/plain")
+        return StreamingResponse(
+            generator(), 
+            media_type="text/plain",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",  # Disable nginx buffering
+                "Transfer-Encoding": "chunked",
+                "Content-Type": "text/plain; charset=utf-8"
+            }
+        )
     else:
         # agent.run returns a generator even when stream=False (for persistence)
         # So we need to consume it to get the full answer
@@ -168,7 +180,14 @@ async def get_config(api_key: Optional[str] = Depends(verify_api_key)):
         "cors_origins": ALLOWED_ORIGINS,
         "default_language": DEFAULT_LANGUAGE,
         "supported_languages": SUPPORTED_LANGUAGES,
-        "auto_detect_language": AUTO_DETECT_LANGUAGE
+        "auto_detect_language": AUTO_DETECT_LANGUAGE,
+        "streaming": {
+            "char_by_char": os.getenv("STREAM_CHAR_BY_CHAR", "true").lower() == "true",
+            "force_small_chunks": os.getenv("FORCE_SMALL_CHUNKS", "true").lower() == "true",
+            "network_optimized": os.getenv("NETWORK_STREAMING_OPTIMIZED", "true").lower() == "true",
+            "debug_logging": os.getenv("DEBUG_STREAMING", "false").lower() == "true",
+            "granularity": "ultra-smooth" if os.getenv("FORCE_SMALL_CHUNKS", "true").lower() == "true" else "smart-chunking"
+        }
     }
 
 

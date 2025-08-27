@@ -38,11 +38,13 @@ def main():
         import uvicorn
         from api import app
         
+        # Development: reload=True for auto-reload on code changes
+        # Production: reload=False for stability and performance
         uvicorn.run(
             app, 
             host=host, 
             port=port,
-            reload=True,  # Enable auto-reload for development
+            reload=True,  # Enable auto-reload for development (disable in production)
             log_level="info"
         )
     except KeyboardInterrupt:
