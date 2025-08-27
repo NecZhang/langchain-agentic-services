@@ -64,16 +64,23 @@ jobs:
     
     - name: Install dependencies
       run: |
+        echo "🔧 Creating virtual environment..."
         uv venv
-        source .venv/bin/activate
-        uv sync --extra dev
+        echo "📦 Installing dependencies..."
+        uv sync --extra dev || {
+          echo "⚠️ uv sync failed, trying uv pip install..."
+          uv pip install -e ".[dev]"
+        }
+        echo "✅ Dependencies installed"
     
     - name: Verify virtual environment
       run: |
         echo "🔍 Checking virtual environment:"
         ls -la .venv/bin/
+        echo "🐍 Checking Python:"
+        .venv/bin/python --version
         echo "📦 Checking installed packages:"
-        .venv/bin/python -m pip list --format=columns
+        uv pip list
         echo "✅ Virtual environment ready"
     
     - name: Lint with flake8
@@ -125,9 +132,14 @@ jobs:
     
     - name: Install dependencies
       run: |
+        echo "🔧 Creating virtual environment..."
         uv venv
-        source .venv/bin/activate
-        uv sync --extra dev
+        echo "📦 Installing dependencies..."
+        uv sync --extra dev || {
+          echo "⚠️ uv sync failed, trying uv pip install..."
+          uv pip install -e ".[dev]"
+        }
+        echo "✅ Dependencies installed"
     
     - name: Run security scan
       run: |
@@ -151,9 +163,14 @@ jobs:
     
     - name: Install dependencies
       run: |
+        echo "🔧 Creating virtual environment..."
         uv venv
-        source .venv/bin/activate
-        uv sync
+        echo "📦 Installing dependencies..."
+        uv sync || {
+          echo "⚠️ uv sync failed, trying uv pip install..."
+          uv pip install -e "."
+        }
+        echo "✅ Dependencies installed"
     
     - name: Validate documentation
       run: |
