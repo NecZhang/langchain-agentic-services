@@ -3,7 +3,7 @@ Language detection and management utilities for Chinese-first agentic service.
 """
 
 import re
-from typing import Any
+from typing import Literal
 
 
 def detect_language(text: str) -> str:
@@ -152,7 +152,9 @@ def get_error_message(error_type: str, language: str = "Chinese") -> str:
             "processing_error": "❌ 文档处理过程中出现错误",
             "translation_required": "❌ 翻译任务需要提供文档文件",
             "analysis_required": "❌ 分析任务需要提供文档文件",
-            "comparison_required": "❌ 比较任务需要至少一个文档。请上传文件或使用之前对话中的文档",
+            "comparison_required": (
+                "❌ 比较任务需要至少一个文档。请上传文件或使用之前对话中的文档"
+            ),
             "no_content": "❌ 文档中没有可提取的文本内容",
         },
         "English": {
@@ -162,7 +164,10 @@ def get_error_message(error_type: str, language: str = "Chinese") -> str:
             "processing_error": "❌ Error occurred during document processing",
             "translation_required": "❌ Translation tasks require a document file",
             "analysis_required": "❌ Analysis tasks require a document file",
-            "comparison_required": "❌ Comparison tasks require at least one document. Please upload a file or use documents from previous conversation turns",
+            "comparison_required": (
+                "❌ Comparison tasks require at least one document. Please upload a file "
+                "or use documents from previous conversation turns"
+            ),
             "no_content": "❌ No extractable text content found in document",
         },
     }

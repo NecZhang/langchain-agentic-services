@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Optional
 
 import fitz  # PyMuPDF is available in this environment
 from pptx import Presentation

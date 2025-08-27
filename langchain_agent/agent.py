@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Optional, List, Generator, Union
+from typing import Optional, List
 
 import requests
 from tqdm import tqdm
@@ -41,9 +41,7 @@ from .storage import (
 from .language_utils import (
     detect_language,
     get_system_prompt,
-    get_error_message,
     get_processing_message,
-    get_mode_translation,
 )
 
 __all__ = ["SimpleAgent"]
@@ -195,7 +193,10 @@ class SimpleAgent:
             system_prompt = f"你是一个专业的翻译专家。请将以下文本翻译成{target_language}。保持原有的格式和结构。"
             user_content = f"请翻译以下文本：\n\n{text}"
         else:
-            system_prompt = f"You are a professional translator. Translate the following text to {target_language}. Preserve the meaning and formatting where possible."
+            system_prompt = (
+                f"You are a professional translator. Translate the following text to "
+                f"{target_language}. Preserve the meaning and formatting where possible."
+            )
             user_content = text
 
         messages = [
@@ -311,14 +312,17 @@ class SimpleAgent:
 - 使用专业商业语言"""
             user_content = f"请对以下文档内容进行专业总结：\n\n{text}"
         else:
-            system_prompt = """You are a professional enterprise document summarization expert. Create structured, comprehensive document summaries highlighting key points, main ideas, and important details.
-
-Summary requirements:
-- Use executive summary format with core conclusions
-- Identify key business information, data, and recommendations
-- Maintain objectivity and avoid subjective interpretations
-- Mark important risk factors or decision elements
-- Use professional business language"""
+            system_prompt = (
+                "You are a professional enterprise document summarization expert. "
+                "Create structured, comprehensive document summaries highlighting key "
+                "points, main ideas, and important details.\n\n"
+                "Summary requirements:\n"
+                "- Use executive summary format with core conclusions\n"
+                "- Identify key business information, data, and recommendations\n"
+                "- Maintain objectivity and avoid subjective interpretations\n"
+                "- Mark important risk factors or decision elements\n"
+                "- Use professional business language"
+            )
             user_content = f"Please provide a professional summary of the following document:\n\n{text}"
 
         messages = [
@@ -501,7 +505,7 @@ Summary requirements:
                 respect_paragraphs=True,
             )
 
-            print(f"✂️  Chunking text for summarization...")
+            print("✂️  Chunking text for summarization...")
             doc_hash = compute_file_hash(file_path) if file_path else "nofile"
             key = cache_key(doc_hash, "summarization")
             cached_chunks = load_chunks(storage_paths, key) if storage_paths else None
@@ -530,7 +534,7 @@ Summary requirements:
                 respect_paragraphs=True,
             )
 
-            print(f"✂️  Chunking text for analysis...")
+            print("✂️  Chunking text for analysis...")
             doc_hash = compute_file_hash(file_path) if file_path else "nofile"
             key = cache_key(doc_hash, "analysis")
             cached_chunks = load_chunks(storage_paths, key) if storage_paths else None
@@ -559,7 +563,7 @@ Summary requirements:
                 respect_paragraphs=True,
             )
 
-            print(f"✂️  Chunking text for extraction...")
+            print("✂️  Chunking text for extraction...")
             doc_hash = compute_file_hash(file_path) if file_path else "nofile"
             key = cache_key(doc_hash, "extraction")
             cached_chunks = load_chunks(storage_paths, key) if storage_paths else None
@@ -593,7 +597,8 @@ Summary requirements:
             # Need at least one document to compare
             if not texts:
                 raise ValueError(
-                    "Comparison tasks require at least one document. Please upload a file or use documents from previous conversation turns."
+                    "Comparison tasks require at least one document. Please upload a file "
+                    "or use documents from previous conversation turns."
                 )
 
             # If only one document, inform the user but still proceed

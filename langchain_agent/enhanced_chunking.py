@@ -433,12 +433,12 @@ def chunk_document(
     elif mode == ChunkingMode.TRANSLATION:
         # For translation, use semantic chunking with large chunks
         config.max_chars = min(config.max_chars, 100_000)
-        print(f"🔧 Using semantic chunking optimized for translation")
+        print("🔧 Using semantic chunking optimized for translation")
         chunker = SemanticChunking()
         chunks = chunker.chunk(text, config)
     else:
         # For other cases, use adaptive chunking
-        print(f"🔧 Using adaptive chunking strategy")
+        print("🔧 Using adaptive chunking strategy")
         chunker = AdaptiveChunking()
         chunks = chunker.chunk(text, config)
 

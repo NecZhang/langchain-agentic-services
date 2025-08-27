@@ -10,10 +10,10 @@ libraries, these utilities operate purely on plain text.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import List, Tuple, Iterable, Optional
+import json
+import os
+from typing import List, Tuple, Optional
 
-import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
 

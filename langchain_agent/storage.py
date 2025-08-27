@@ -22,14 +22,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import shutil
 import time
-from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Tuple
-
-import numpy as np
+from typing import Any, Dict, List, Optional, Tuple
 from scipy import sparse
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import NearestNeighbors
@@ -65,14 +64,15 @@ def get_storage_paths() -> Tuple[Path, Path]:
     return data_path, temp_path
 
 
-@dataclass
 class StoragePaths:
-    base_dir: Path
-    user_dir: Path
-    session_dir: Path
-    history_path: Path
-    uploads_dir: Path
-    caches_dir: Path
+    def __init__(self, base_dir: Path, user_dir: Path, session_dir: Path, 
+                 history_path: Path, uploads_dir: Path, caches_dir: Path):
+        self.base_dir = base_dir
+        self.user_dir = user_dir
+        self.session_dir = session_dir
+        self.history_path = history_path
+        self.uploads_dir = uploads_dir
+        self.caches_dir = caches_dir
 
 
 def ensure_session_dirs(user_id: str, session_id: str, base_dir: Optional[Path] = None) -> StoragePaths:
@@ -91,11 +91,10 @@ def ensure_session_dirs(user_id: str, session_id: str, base_dir: Optional[Path] 
         d.mkdir(parents=True, exist_ok=True)
         # Set restrictive permissions for production
         # Use environment variables to determine if this is a production path
-        is_production_path = str(d).startswith(os.environ.get("AGENTIC_DATA_DIR", "/var/lib")) or str(  # nosec B108
-            d
-        ).startswith(
-            os.environ.get("AGENTIC_TEMP_DIR", "/tmp")
-        )  # nosec B108
+        is_production_path = (
+            str(d).startswith(os.environ.get("AGENTIC_DATA_DIR", "/var/lib")) or  # nosec B108
+            str(d).startswith(os.environ.get("AGENTIC_TEMP_DIR", "/tmp"))  # nosec B108
+        )
         if is_production_path:
             d.chmod(0o750)  # Owner: rwx, Group: rx, Others: none
 
