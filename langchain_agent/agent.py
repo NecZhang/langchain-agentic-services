@@ -20,7 +20,7 @@ from .file_parser import parse_file
 from .intent_recognizer import detect_intent
 from .rag_utils import RAGRetriever
 from .enhanced_chunking import chunk_document, ChunkingMode, ChunkingConfig, get_file_type
-from .storage import (
+from .storage_factory import (
     ensure_session_dirs,
     append_chat_message,
     load_chat_history,
@@ -618,12 +618,25 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
                 # Copy upload to session folder
                 uploaded_path = copy_upload(storage_paths, file_path)
                 file_path = str(uploaded_path)
+                print(f"📁 File uploaded to session: {uploaded_path}")
             file_text = parse_file(file_path)
             print(get_processing_message("parsed", detected_language, chars=len(file_text)))
             file_ext = get_file_type(file_path)
+            
+            # Check if we have previous context in this session
+            if storage_paths:
+                cached_docs = get_all_cached_documents(storage_paths)
+                if cached_docs:
+                    print(f"📚 Session has {len(cached_docs)} cached documents from previous uploads")
+                    for doc_key, chunks in cached_docs:
+                        print(f"   - {doc_key}: {len(chunks)} chunks")
+                else:
+                    print("📚 No previous documents in this session")
 
         # Determine intent from the query
         intent = detect_intent(query)
+        print(f"🎯 Detected intent: {intent}")
+        
         if intent == "translate":
             # Translation can work with files, chat history, or direct text
             if not file_text and not recent_history:
@@ -674,6 +687,8 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
                 respect_sentences=True,
                 respect_paragraphs=True,
             )
+            
+            print(f"🔧 Translation chunking config: mode={translation_config.mode.value}, max_chars={translation_config.max_chars}")
 
             print(f"✂️  Chunking text using {file_ext.upper()} optimized strategy...")
             # Cache by file hash + mode
@@ -742,7 +757,13 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
             return self._summarize(all_text, stream=stream)
 
         elif intent == "analyze":
-            if not file_text:
+            # Check if this is actually a RAG request disguised as analysis
+            # Queries like "结合这个文件，再解释下单晶探头的优势" should use RAG
+            if file_text and _should_use_rag_instead_of_analysis(query):
+                print("🔄 Detected explanation request with file - switching to RAG mode for better context handling")
+                # Fall through to the RAG section below
+                intent = "qa"  # This will trigger the RAG workflow
+            elif not file_text:
                 raise ValueError("Analysis tasks require an attached file with content.")
 
             # Create analysis-optimized chunking config
@@ -768,6 +789,26 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
 
             # Analyze the combined text
             all_text = "\n\n".join(chunks)
+            
+            # Check if we have additional session context to enhance the analysis
+            if storage_paths:
+                cached_docs = get_all_cached_documents(storage_paths)
+                if cached_docs:
+                    print(f"🔗 Enhancing analysis with {len(cached_docs)} cached documents from session...")
+                    # Create enhanced context for analysis
+                    enhanced_context = []
+                    enhanced_context.append(f"📄 **Current File Analysis:**\n{all_text}")
+                    
+                    # Add relevant context from previous uploads
+                    for doc_key, doc_chunks in cached_docs:
+                        if doc_key != key:  # Skip current file
+                            doc_text = "\n\n".join(doc_chunks)
+                            enhanced_context.append(f"📚 **Additional Context from {doc_key}:**\n{doc_text}")
+                    
+                    enhanced_text = "\n\n---\n\n".join(enhanced_context)
+                    print(f"✅ Enhanced analysis context with session knowledge")
+                    return self._analyze(enhanced_text, stream=stream)
+            
             return self._analyze(all_text, stream=stream)
 
         elif intent == "extract":
@@ -874,24 +915,128 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
                 for idx, dist in results:
                     context_docs.append(docs[idx])
                 print(f"✅ Found {len(context_docs)} relevant document sections")
-            elif storage_paths:
-                # No file this time; try to reuse last document for this session
-                key = get_last_doc_key(storage_paths)
-                if key:
-                    print(f"♻️  Reusing last document cache: {key}")
-                    cached_chunks = load_chunks(storage_paths, key)
-                    if cached_chunks:
-                        docs = cached_chunks
-                        retriever_loaded = load_retriever(storage_paths, key)
-                        if retriever_loaded:
-                            vectorizer, doc_vectors, nn = retriever_loaded
-                            retriever = RAGRetriever(docs, vectorizer=vectorizer, doc_vectors=doc_vectors, nn=nn)
+            
+            # Always check for accumulated session context, even when no file is uploaded
+            if storage_paths:
+                cached_docs = get_all_cached_documents(storage_paths)
+                if cached_docs:
+                    print(f"📖 Checking {len(cached_docs)} cached documents from previous uploads in this session...")
+                    # Track which documents we've already processed to avoid duplicates
+                    processed_docs = set()
+                    
+                    for doc_key, chunks in cached_docs:
+                        # Skip if we already have this document from current upload
+                        if not file_text or doc_key != cache_key(compute_file_hash(file_path), "rag") if file_path else None:
+                            # Skip if we've already processed this document
+                            if doc_key in processed_docs:
+                                continue
+                            processed_docs.add(doc_key)
+                            # Use RAG to find relevant content from cached documents
+                            if "rag" in doc_key:
+                                # This is already RAG-optimized, use it directly
+                                context_docs.extend(chunks[:2])  # Add top 2 chunks from each cached doc
+                                print(f"📚 Added {len(chunks[:2])} chunks from cached RAG document: {doc_key}")
+                            else:
+                                # This is from other modes (translation, analysis, etc.), create RAG chunks
+                                print(f"🔄 Converting cached document to RAG format: {doc_key}")
+                                rag_chunks = chunk_document("\n\n".join(chunks), mode=ChunkingMode.RAG, config=ChunkingConfig(mode=ChunkingMode.RAG))
+                                context_docs.extend(rag_chunks[:2])  # Add top 2 chunks
+                                print(f"📚 Added {len(rag_chunks[:2])} RAG chunks from cached document: {doc_key}")
+            
+            # If we have both current file and session context, enhance the answer with comprehensive context
+            if file_text and context_docs:
+                print(f"🔗 Combining current file content with {len(context_docs)} context sections from session...")
+                # Create a comprehensive context that includes both current file and session knowledge
+                comprehensive_context = []
+                
+                # Add current file content first (higher priority)
+                if file_text:
+                    comprehensive_context.append(f"📄 **Current Uploaded File Content:**\n{file_text}")
+                
+                # Add relevant session context
+                if context_docs:
+                    comprehensive_context.append(f"📚 **Relevant Session Context:**\n{chr(10).join(context_docs)}")
+                
+                # Update context_docs to include the comprehensive context
+                context_docs = comprehensive_context
+                print(f"✅ Created comprehensive context combining current file and session knowledge")
+            
+            if not context_docs:
+                # Check if user is asking about file content but no file is attached
+                if _is_asking_about_file_content(query):
+                    print("📄 User is asking about file content but no file attached. Checking session cache...")
+                    if storage_paths:
+                        cached_docs = get_all_cached_documents(storage_paths)
+                        if cached_docs:
+                            print(f"📚 Found {len(cached_docs)} cached documents in session. Using them for RAG...")
+                            # Use all cached documents for comprehensive RAG
+                            # Track which documents we've already processed to avoid duplicates
+                            processed_docs = set()
+                            
+                            for doc_key, chunks in cached_docs:
+                                # Skip if we've already processed this document
+                                if doc_key in processed_docs:
+                                    continue
+                                processed_docs.add(doc_key)
+                                
+                                if "rag" in doc_key:
+                                    context_docs.extend(chunks)
+                                else:
+                                    # Convert other modes to RAG chunks
+                                    rag_chunks = chunk_document("\n\n".join(chunks), mode=ChunkingMode.RAG, config=ChunkingConfig(mode=ChunkingMode.RAG))
+                                    context_docs.extend(rag_chunks)
+                            print(f"✅ Created RAG context from {len(cached_docs)} cached documents")
                         else:
-                            retriever = RAGRetriever(docs)
-                        results = retriever.query(query, k=3)
-                        for idx, dist in results:
-                            context_docs.append(docs[idx])
-                        print(f"✅ Reused {len(context_docs)} context sections from cache")
+                            print("💡 No cached documents in session. Providing knowledge-based answer...")
+                            guidance = (
+                                "\n\n💡 **Note**: This answer is based on general knowledge. "
+                                "For more specific and accurate answers, consider uploading relevant documents. "
+                                "You can also ask follow-up questions about specific aspects."
+                            )
+                            
+                            if stream:
+                                def _wrap_knowledge_stream():
+                                    for chunk in self._qa(query, [], stream=True, history=recent_history):
+                                        yield chunk
+                                    yield guidance
+                                return _wrap_knowledge_stream()
+                            else:
+                                answer = self._qa(query, [], stream=False, history=recent_history)
+                                return answer + guidance
+                    else:
+                        print("💡 No storage paths available. Providing knowledge-based answer...")
+                        guidance = (
+                            "\n\n💡 **Note**: This answer is based on general knowledge. "
+                            "For more specific and accurate answers, consider uploading relevant documents. "
+                            "You can also ask follow-up questions about specific aspects."
+                        )
+                        
+                        if stream:
+                            def _wrap_knowledge_stream():
+                                for chunk in self._qa(query, [], stream=True, history=recent_history):
+                                    yield chunk
+                                yield guidance
+                            return _wrap_knowledge_stream()
+                        else:
+                            answer = self._qa(query, [], stream=False, history=recent_history)
+                            return answer + guidance
+                else:
+                    print("💡 No document context available. Providing knowledge-based answer...")
+                    guidance = (
+                        "\n\n💡 **Note**: This answer is based on general knowledge. "
+                        "For more specific and accurate answers, consider uploading relevant documents. "
+                        "You can also ask follow-up questions about specific aspects."
+                    )
+                    
+                    if stream:
+                        def _wrap_knowledge_stream():
+                            for chunk in self._qa(query, [], stream=True, history=recent_history):
+                                yield chunk
+                            yield guidance
+                        return _wrap_knowledge_stream()
+                    else:
+                        answer = self._qa(query, [], stream=False, history=recent_history)
+                        return answer + guidance
             # Ask the model to answer using the retrieved context
             if stream:
                 print("🔄 Streaming answer...")
@@ -910,3 +1055,65 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
                 return _wrap_stream_and_persist()
             else:
                 return stream_iter
+
+
+def _should_use_rag_instead_of_analysis(query: str) -> bool:
+    """Determine if a query should use RAG instead of analysis mode.
+    
+    This function identifies queries that are asking for explanations or information
+    based on file content, which are better handled by RAG than pure analysis.
+    """
+    query_lower = query.lower()
+    
+    # Chinese patterns that indicate explanation requests
+    explanation_patterns = [
+        "解释", "解释一下", "解释这个", "说明", "说明一下", "说明这个",
+        "结合", "结合这个", "结合文件", "结合文档", "综合", "综合这个",
+        "再解释", "再说明", "再阐述"
+    ]
+    
+    # Check if the query contains explanation patterns
+    if any(pattern in query for pattern in explanation_patterns):
+        return True
+    
+    # English patterns that indicate explanation requests
+    english_explanation_patterns = [
+        "explain", "explanation", "tell me about", "what is", "what are",
+        "how does", "why is", "describe", "elaborate", "clarify"
+    ]
+    
+    if any(pattern in query_lower for pattern in english_explanation_patterns):
+        return True
+    
+    return False
+
+
+def _is_asking_about_file_content(query: str) -> bool:
+    """Determine if a user is asking about file content even when no file is attached.
+    
+    This function identifies queries that are requesting information that should come
+    from documents, indicating the user expects file-based answers.
+    """
+    query_lower = query.lower()
+    
+    # Chinese patterns that indicate file content requests
+    chinese_file_patterns = [
+        "根据", "根据文件", "根据文档", "根据信息", "基于", "基于文件", "基于文档",
+        "文件信息", "文档信息", "文档中", "文件中", "资料中", "内容中"
+    ]
+    
+    # English patterns that indicate file content requests
+    english_file_patterns = [
+        "based on", "according to", "from the", "in the", "document", "file",
+        "information", "content", "data", "text"
+    ]
+    
+    # Check for Chinese patterns
+    if any(pattern in query for pattern in chinese_file_patterns):
+        return True
+    
+    # Check for English patterns
+    if any(pattern in query_lower for pattern in english_file_patterns):
+        return True
+    
+    return False

@@ -1,0 +1,84 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific - exclude these directories to avoid setuptools issues
+.data/
+.tmp_uploads/
+docker/
+*.log
+.env.local
+.env.development
+
+# Documentation
+README.md
+README_CN.md
+*.md
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.override.yml
+
+# Temporary and cache files
+.tmp_uploads/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Additional exclusions to prevent setuptools package discovery issues
+docker/setup_docker.sh
+DOCKER_SETUP_SUMMARY.md
+docker/setup_storage.sh
+docker/setup_github.sh
+pyproject.toml
+uv.lock
+.env
+.env.example

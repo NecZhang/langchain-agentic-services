@@ -44,7 +44,7 @@ def main():
             app, 
             host=host, 
             port=port,
-            reload=True,  # Enable auto-reload for development (disable in production)
+            reload=False,  # Disable auto-reload to prevent hanging
             log_level="info"
         )
     except KeyboardInterrupt:

@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  agentic-service:
+    image: agentic-service:latest
+    container_name: agentic-service
+    ports:
+      - "9510:9510"
+    environment:
+      # Server configuration
+      - API_HOST=0.0.0.0
+      - API_PORT=9510
+      
+      # vLLM connection (update these for your setup)
+      - VLLM_ENDPOINT=http://192.168.6.10:8002
+      - VLLM_MODEL=Qwen/Qwen3-32B-FP8
+      - AGENTIC_REQUEST_TIMEOUT=30
+      
+      # Clear proxy settings (ensure direct connection)
+      - HTTP_PROXY=
+      - HTTPS_PROXY=
+      - NO_PROXY=
+      
+      # Language configuration
+      - DEFAULT_LANGUAGE=Chinese
+      - SUPPORTED_LANGUAGES=Chinese,English
+      - AUTO_DETECT_LANGUAGE=true
+      
+      # Streaming configuration
+      - STREAM_CHAR_BY_CHAR=true
+      - FORCE_SMALL_CHUNKS=true
+      - NETWORK_STREAMING_OPTIMIZED=true
+      - DEBUG_STREAMING=false
+      
+      # Development mode (disable in production)
+      - ENABLE_RELOAD=false
+      
+      # Storage configuration
+      - AGENTIC_DATA_DIR=/app/data
+      - AGENTIC_TEMP_DIR=/app/tmp_uploads
+      - STORAGE_BACKEND=database
+      - DATABASE_URL=postgresql://agentic_user:secure_password_change_me@192.168.6.19:5432/agentic_service
+      
+      # Security (optional)
+      # - API_KEY=your_secret_key
+      - MAX_FILE_SIZE_MB=50
+      
+      # CORS
+      - ALLOWED_ORIGINS=*
+    
+    volumes:
+      # Persistent data storage
+      - agentic_data:/app/data
+      - agentic_temp:/app/tmp_uploads
+      
+      # Mount .env file for easy configuration
+      - ../.env:/app/.env:ro
+    
+    restart: unless-stopped
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9510/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+volumes:
+  agentic_data:
+    driver: local
+  agentic_temp:
+    driver: local

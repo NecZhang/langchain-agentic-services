@@ -30,10 +30,10 @@
 After creating the repository, edit and run:
 ```bash
 # Edit the script to replace YOUR_USERNAME with your actual GitHub username
-nano setup_github.sh
+nano docker/setup_github.sh
 
 # Run the setup script
-./setup_github.sh
+./docker/setup_github.sh
 ```
 
 #### **3. Configure Repository Settings**

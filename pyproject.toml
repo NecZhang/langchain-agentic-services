@@ -32,7 +32,10 @@ dependencies = [
   "scipy>=1.16.1",
   "joblib>=1.5.1",
   "python-docx>=1.2.0",
-  "pytesseract>=0.3.13"
+  "pytesseract>=0.3.13",
+  "sqlalchemy>=2.0.0",
+  "psycopg2-binary>=2.9.0",
+  "alembic>=1.12.0",
 ]
 
 # Optional dependencies for additional functionality
@@ -56,3 +59,8 @@ requires = [
   "setuptools>=61.0"
 ]
 build-backend = "setuptools.build_meta"
+
+# Fix package discovery issue
+[tool.setuptools.packages.find]
+include = ["langchain_agent*"]
+exclude = ["docker*", "tests*", "*.tmp*"]

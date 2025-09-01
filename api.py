@@ -44,11 +44,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Optional API key authentication
+# Optional API key authentication (currently disabled)
 def verify_api_key(api_key: Optional[str] = Form(None)):
-    if API_KEY and api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API key")
-    return api_key
+    # Temporarily disabled - always allow access
+    return None
+    # if API_KEY and api_key != API_KEY:
+    #     raise HTTPException(status_code=401, detail="Invalid API key")
+    # return api_key
 
 
 @app.post("/chat")
