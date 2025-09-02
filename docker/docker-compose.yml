@@ -5,11 +5,11 @@ services:
     image: agentic-service:latest
     container_name: agentic-service
     ports:
-      - "9510:9510"
+      - "9211:9211"
     environment:
       # Server configuration
       - API_HOST=0.0.0.0
-      - API_PORT=9510
+      - API_PORT=9211
       
       # vLLM connection (update these for your setup)
       - VLLM_ENDPOINT=http://192.168.6.10:8002
@@ -60,7 +60,7 @@ services:
     
     # Health check
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9510/docs"]
+      test: ["CMD", "curl", "-f", "http://localhost:9211/docs"]
       interval: 30s
       timeout: 10s
       retries: 3

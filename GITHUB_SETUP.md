@@ -149,7 +149,7 @@ The CI/CD pipeline (`.github/workflows/ci.yml`) will automatically:
 ```
 📁 Project Structure:
 ├── 📁 .github/workflows/          # CI/CD pipeline
-├── 📁 langchain_agent/           # Core package (8 files)
+├── 📁 simple_agent/              # Core package (8 files)
 ├── 📄 README.md + README_CN.md   # Bilingual documentation
 ├── 📄 api.py                     # FastAPI server
 ├── 📄 main.py                    # CLI interface

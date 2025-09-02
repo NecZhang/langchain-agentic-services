@@ -31,7 +31,7 @@ A professional, Chinese-first AI assistant service designed for enterprise docum
 
 4. **Test the API**
    ```bash
-   curl -X POST http://localhost:9510/chat \
+   curl -X POST http://localhost:9211/chat \
      -F query='Hello, test the service' \
      -F user='test_user'
    ```
@@ -45,7 +45,7 @@ VLLM_MODEL=Qwen/Qwen3-32B-FP8
 
 # API Server
 API_HOST=0.0.0.0
-API_PORT=9510
+API_PORT=9211
 
 # Language (Chinese-first)
 DEFAULT_LANGUAGE=Chinese
@@ -58,7 +58,7 @@ MAX_FILE_SIZE_MB=50
 
 ## 📚 API Reference
 
-### Base URL: `http://localhost:9510`
+### Base URL: `http://localhost:9211`
 
 ### 🔗 Endpoints
 
@@ -181,7 +181,7 @@ GET /config
 ```bash
 # Server settings
 HOST=0.0.0.0                    # Server host (default: 0.0.0.0)
-PORT=9510                        # Server port (default: 9510)
+PORT=9211                        # Server port (default: 9211)
 
 # vLLM connection
 VLLM_ENDPOINT=http://192.168.6.10:8002  # vLLM server URL
@@ -248,7 +248,7 @@ AGENTIC_TEMP_DIR=.tmp_uploads    # Temporary upload directory
 #### **Network Streaming (Remote Client):**
 ```bash
 # For smooth streaming over network, use --no-buffer
-curl -X POST http://192.168.6.19:9510/chat \
+curl -X POST http://192.168.6.19:9211/chat \
   -F query='translate this document to English' \
   -F user='translator' \
   -F files=@document.pdf \
@@ -259,13 +259,13 @@ curl -X POST http://192.168.6.19:9510/chat \
 #### **Multi-Language Translation:**
 ```bash
 # Chinese to English
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='translate to English' \
   -F user='translator' \
   -F files=@chinese_doc.pdf
 
 # English to Chinese
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='translate to Chinese' \
   -F user='translator' \
   -F files=@english_doc.pdf
@@ -274,20 +274,20 @@ curl -X POST http://localhost:9510/chat \
 #### **Session-Based Workflow:**
 ```bash
 # Step 1: Upload document
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='Upload this research paper' \
   -F user='researcher' \
   -F session='paper_analysis' \
   -F files=@research.pdf
 
 # Step 2: Ask questions about the document
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='What are the main findings?' \
   -F user='researcher' \
   -F session='paper_analysis'
 
 # Step 3: Translate the conversation
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='translate our conversation to Chinese' \
   -F user='researcher' \
   -F session='paper_analysis'
@@ -297,14 +297,14 @@ curl -X POST http://localhost:9510/chat \
 
 ### **Text-Only Chat**
 ```bash
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='什么是人工智能?' \
   -F user='john_doe'
 ```
 
 ### **Document Analysis**
 ```bash
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='请分析这个报告的关键发现' \
   -F user='analyst' \
   -F files=@report.pdf
@@ -313,23 +313,23 @@ curl -X POST http://localhost:9510/chat \
 ### **Text Translation (Multiple Ways)**
 ```bash
 # Method 1: Direct text in query
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='translate: Hello, how are you today?' \
   -F user='translator'
 
 # Method 2: Text in quotes
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='translate "What is artificial intelligence?" to Chinese' \
   -F user='translator'
 
 # Method 3: With chat history (translate conversation)
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='translate our conversation to English' \
   -F user='user123' \
   -F session='conversation_001'
 
 # Method 4: Document translation
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='translate this document to English' \
   -F user='translator' \
   -F files=@document.pdf
@@ -337,7 +337,7 @@ curl -X POST http://localhost:9510/chat \
 
 ### **Multiple Document Comparison**
 ```bash
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='Compare these proposals' \
   -F user='manager' \
   -F files=@proposal1.pdf \
@@ -346,7 +346,7 @@ curl -X POST http://localhost:9510/chat \
 
 ### **Streaming Response**
 ```bash
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='详细分析市场趋势' \
   -F stream=true \
   -F files=@market_data.xlsx
@@ -402,14 +402,14 @@ Each user/session combination maintains:
 ### **Example: Team Workflow**
 ```bash
 # Marketing team uploads research
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='上传市场调研报告' \
   -F user='marketing' \
   -F session='q4_planning' \
   -F files=@research.pdf
 
 # Later, ask follow-up questions
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='基于之前的报告，制定营销策略' \
   -F user='marketing' \
   -F session='q4_planning'
@@ -449,7 +449,7 @@ curl -F api_key='your_secure_key' ...
 import requests
 
 def query_agent(query, files=None, user="default", session="default"):
-    url = "http://localhost:9510/chat"
+    url = "http://localhost:9211/chat"
     data = {"query": query, "user": user, "session": session}
     
     files_data = []
@@ -518,10 +518,10 @@ The service automatically optimizes chunking based on:
 ### **Health Checks**
 ```bash
 # Service status
-curl http://localhost:9510/health
+curl http://localhost:9211/health
 
 # Configuration info
-curl http://localhost:9510/config
+curl http://localhost:9211/config
 ```
 
 ### **Logging**
@@ -570,7 +570,7 @@ formData.append('query', '分析这个文档');
 formData.append('files', fileInput.files[0]);
 formData.append('user', currentUser.id);
 
-fetch('http://localhost:9510/chat', {
+fetch('http://localhost:9211/chat', {
     method: 'POST',
     body: formData
 }).then(response => response.json());

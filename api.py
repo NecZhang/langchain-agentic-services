@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from langchain_agent.agent import SimpleAgent
+from simple_agent.agent import SimpleAgent
 
 # Load environment variables
 load_dotenv()
@@ -17,7 +17,7 @@ load_dotenv()
 VLLM_ENDPOINT = os.getenv("VLLM_ENDPOINT", "http://localhost:8000")
 VLLM_MODEL = os.getenv("VLLM_MODEL", "gpt-3.5-turbo")
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
-API_PORT = int(os.getenv("API_PORT", "9510"))
+API_PORT = int(os.getenv("API_PORT", "9211"))
 API_KEY = os.getenv("API_KEY")  # Optional API key for authentication
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "50"))

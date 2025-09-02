@@ -70,7 +70,7 @@ if [[ ! -f .env ]]; then
 VLLM_ENDPOINT=http://192.168.6.10:8002
 VLLM_MODEL=Qwen/Qwen3-32B-FP8
 API_HOST=0.0.0.0
-API_PORT=9510
+API_PORT=9211
 DEFAULT_LANGUAGE=Chinese
 AUTO_DETECT_LANGUAGE=true
 AGENTIC_DATA_DIR=$DATA_DIR
@@ -108,7 +108,7 @@ echo ""
 echo "📝 Next steps:"
 echo "   1. Edit .env file with your vLLM server settings"
 echo "   2. Start the service: python start_server.py"
-echo "   3. Test with: curl http://localhost:9510/health"
+echo "   3. Test with: curl http://localhost:9211/health"
 echo ""
 echo "🔒 Security Note:"
 echo "   - Data directories have restrictive permissions (750)"

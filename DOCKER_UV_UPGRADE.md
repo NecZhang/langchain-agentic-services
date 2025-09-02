@@ -174,7 +174,7 @@ Both pip and uv automatically use proxy settings from environment variables.
 docker images | grep agentic-service
 
 # Test container startup
-docker run --rm -p 9510:9510 agentic-service:latest
+docker run --rm -p 9211:9211 agentic-service:latest
 ```
 
 ## 🚀 **Next Steps**

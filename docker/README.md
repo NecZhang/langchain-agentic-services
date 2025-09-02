@@ -25,9 +25,9 @@ This guide explains how to containerize and run your Agentic Service using Docke
 
 ### **2. Access the Service**
 
-- **API**: http://localhost:9510
-- **Documentation**: http://localhost:9510/docs
-- **Health Check**: http://localhost:9510/docs
+- **API**: http://localhost:9211
+- **Documentation**: http://localhost:9211/docs
+- **Health Check**: http://localhost:9211/docs
 
 ## 🔧 Docker Management Commands
 
@@ -231,8 +231,8 @@ docker build \
 
 2. **Port conflicts:**
    ```bash
-   # Check if port 9510 is already in use
-   netstat -tulpn | grep 9510
+   # Check if port 9211 is already in use
+   netstat -tulpn | grep 9211
    
    # Change port in docker-compose.yml if needed
    ```
@@ -276,7 +276,7 @@ docker build \
 - `VLLM_ENDPOINT`: URL of your vLLM server
 - `VLLM_MODEL`: Model name to use
 - `API_HOST`: Host to bind to (default: 0.0.0.0)
-- `API_PORT`: Port to bind to (default: 9510)
+- `API_PORT`: Port to bind to (default: 9211)
 
 ### **Optional Environment Variables**
 - `API_KEY`: API key for authentication

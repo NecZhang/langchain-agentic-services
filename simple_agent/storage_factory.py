@@ -18,7 +18,7 @@ from .storage import (
     load_chat_history as file_load_chat_history, compute_file_hash,
     copy_upload, cache_key, save_chunks, load_chunks,
     save_retriever, load_retriever, set_last_doc_key,
-    get_last_doc_key, get_all_cached_documents
+    get_last_doc_key, get_all_cached_documents, get_all_cached_documents_with_names
 )
 
 from .db_service import (
@@ -199,5 +199,5 @@ __all__ = [
     'ensure_session_dirs', 'compute_file_hash', 'copy_upload',
     'cache_key', 'save_chunks', 'load_chunks', 'save_retriever',
     'load_retriever', 'set_last_doc_key', 'get_last_doc_key',
-    'get_all_cached_documents'
+    'get_all_cached_documents', 'get_all_cached_documents_with_names'
 ]

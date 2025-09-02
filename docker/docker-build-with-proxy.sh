@@ -113,7 +113,7 @@ build_image() {
             "$BUILD_CONTEXT"; then
             
             print_success "Image built successfully: ${IMAGE_NAME}:${TAG}"
-            print_status "You can now run: docker run -p 9510:9510 ${IMAGE_NAME}:${TAG}"
+            print_status "You can now run: docker run -p 9211:9211 ${IMAGE_NAME}:${TAG}"
             return 0
         else
             print_warning "Build attempt $attempt failed!"

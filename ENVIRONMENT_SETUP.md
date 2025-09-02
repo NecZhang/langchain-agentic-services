@@ -54,7 +54,7 @@ VLLM_MODEL=Qwen/Qwen3-32B-FP8
 ### API Configuration
 ```bash
 API_HOST=0.0.0.0
-API_PORT=9510
+API_PORT=9211
 API_KEY=your_secure_api_key_here
 ALLOWED_ORIGINS=*
 MAX_FILE_SIZE_MB=50
@@ -151,7 +151,7 @@ ENCRYPTION_KEY=your_encryption_key_here_change_this_in_production
 | `VLLM_ENDPOINT` | vLLM server endpoint | `http://192.168.6.10:8002` | Yes |
 | `VLLM_MODEL` | Model name to use | `Qwen/Qwen3-32B-FP8` | Yes |
 | `API_HOST` | API server host | `0.0.0.0` | Yes |
-| `API_PORT` | API server port | `9510` | Yes |
+| `API_PORT` | API server port | `9211` | Yes |
 | `STORAGE_BACKEND` | Storage backend type | `file` | Yes |
 | `AGENTIC_DATA_DIR` | Data directory path | `.data` | If file storage |
 | `AGENTIC_TEMP_DIR` | Temp directory path | `.tmp_uploads` | If file storage |
@@ -190,7 +190,7 @@ echo $VLLM_ENDPOINT
 python -c "from dotenv import load_dotenv; load_dotenv(); print('Config loaded')"
 
 # Test database connection (if using database)
-python -c "from langchain_agent.database import test_connection; test_connection()"
+python -c "from simple_agent.database import test_connection; test_connection()"
 ```
 
 ## 🔒 Security Best Practices

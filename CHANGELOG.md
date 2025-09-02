@@ -93,7 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Configuration
 - **Default Language**: Chinese
 - **Supported Languages**: Chinese, English
-- **Default Port**: 9510
+- **Default Port**: 9211
 - **Max File Size**: 50MB (configurable)
 - **Chunk Strategies**: Character, Semantic, File-type, Adaptive
 

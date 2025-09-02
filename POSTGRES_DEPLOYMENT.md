@@ -61,7 +61,7 @@ VLLM_MODEL=Qwen/Qwen3-32B-FP8
 ./docker/deploy_postgres.sh --status
 
 # Test database connection
-python3 -c "from langchain_agent.database import check_db_connection; print(check_db_connection())"
+python3 -c "from simple_agent.database import check_db_connection; print(check_db_connection())"
 ```
 
 ## 🗄️ **Database Schema Overview**
@@ -223,7 +223,7 @@ FROM pg_stat_user_indexes ORDER BY idx_scan DESC;
 ### **Cleanup Operations:**
 ```python
 # Python cleanup script
-from langchain_agent.db_service import DatabaseService
+from simple_agent.db_service import DatabaseService
 
 with DatabaseService() as db:
     # Clean old sessions (older than 30 days)
@@ -267,7 +267,7 @@ ls -la .data/
 python3 migrate_to_database.py --dry-run
 
 # Check database connection first
-python3 -c "from langchain_agent.database import check_db_connection; print(check_db_connection())"
+python3 -c "from simple_agent.database import check_db_connection; print(check_db_connection())"
 ```
 
 ### **Debug Mode:**

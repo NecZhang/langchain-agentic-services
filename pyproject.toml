@@ -62,5 +62,5 @@ build-backend = "setuptools.build_meta"
 
 # Fix package discovery issue
 [tool.setuptools.packages.find]
-include = ["langchain_agent*"]
+include = ["simple_agent*"]
 exclude = ["docker*", "tests*", "*.tmp*"]

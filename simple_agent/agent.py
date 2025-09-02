@@ -34,6 +34,7 @@ from .storage_factory import (
     set_last_doc_key,
     get_last_doc_key,
     get_all_cached_documents,
+    get_all_cached_documents_with_names,
 )
 from .language_utils import detect_language, get_system_prompt, get_processing_message
 
@@ -233,6 +234,77 @@ class SimpleAgent:
                 conversation_lines.append(f"{role.title()}: {content}")
         
         return "\n\n".join(conversation_lines)
+    
+    def _parse_file_selection(self, selection: str, cached_docs: List[tuple]) -> List[tuple]:
+        """Parse user's file selection and return selected documents."""
+        selection = selection.strip().lower()
+        
+        if selection == "all":
+            return cached_docs
+        elif selection == "latest":
+            # Get the most recent document
+            last_doc_key = get_last_doc_key(self.storage_paths) if hasattr(self, 'storage_paths') else None
+            if last_doc_key:
+                for doc_key, chunks in cached_docs:
+                    if doc_key == last_doc_key:
+                        return [(doc_key, chunks)]
+            # If no last doc key, return the last document in the list
+            return [cached_docs[-1]] if cached_docs else []
+        else:
+            # Parse numeric selections (e.g., "1", "1,3", "1,2,3")
+            try:
+                indices = []
+                for part in selection.split(','):
+                    part = part.strip()
+                    if part.isdigit():
+                        idx = int(part) - 1  # Convert to 0-based index
+                        if 0 <= idx < len(cached_docs):
+                            indices.append(idx)
+                
+                if indices:
+                    return [cached_docs[i] for i in indices]
+                else:
+                    return []
+            except (ValueError, IndexError):
+                return []
+    
+    def _is_file_selection_response(self, query: str) -> bool:
+        """Check if the query is a response to a file selection confirmation."""
+        query_lower = query.strip().lower()
+        
+        # Check for numeric responses
+        if query_lower.isdigit():
+            return True
+        
+        # Check for comma-separated numbers
+        if ',' in query_lower:
+            parts = query_lower.split(',')
+            return all(part.strip().isdigit() for part in parts)
+        
+        # Check for keywords
+        if query_lower in ['all', 'latest']:
+            return True
+        
+        # More flexible pattern matching for remote API calls
+        # Check if it looks like a file selection (numbers, commas, spaces, dashes)
+        import re
+        if re.match(r'^[\d\s,.-]+$', query_lower) and len(query_lower) <= 20:
+            # Further validate it contains at least one digit
+            return bool(re.search(r'\d', query_lower))
+        
+        return False
+    
+    def _should_auto_select_all_files(self, intent: str) -> bool:
+        """Determine if the agent should automatically select all files for this intent."""
+        # Tasks that typically benefit from multiple files
+        auto_select_intents = ["compare"]
+        return intent in auto_select_intents
+    
+    def _should_ask_for_file_confirmation(self, intent: str, num_files: int) -> bool:
+        """Determine if the agent should ask for file confirmation for this intent."""
+        # Only ask for confirmation if there are multiple files and it's a single-file task
+        single_file_intents = ["translate", "summarize", "analyze", "extract"]
+        return intent in single_file_intents and num_files > 1
 
     # -----------------------------------------------------------------
     # High level tasks
@@ -625,57 +697,180 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
             
             # Check if we have previous context in this session
             if storage_paths:
-                cached_docs = get_all_cached_documents(storage_paths)
+                cached_docs = get_all_cached_documents_with_names(storage_paths)
                 if cached_docs:
                     print(f"📚 Session has {len(cached_docs)} cached documents from previous uploads")
-                    for doc_key, chunks in cached_docs:
-                        print(f"   - {doc_key}: {len(chunks)} chunks")
+                    for doc_key, filename, chunks in cached_docs:
+                        print(f"   - {filename}: {len(chunks)} chunks")
                 else:
                     print("📚 No previous documents in this session")
 
-        # Determine intent from the query
+        # Determine intent from the query first
         intent = detect_intent(query)
         print(f"🎯 Detected intent: {intent}")
         
+        # Check if this is a response to a file selection confirmation
+        if storage_paths and recent_history:
+            # Check if the last assistant message was a file selection confirmation
+            last_assistant_msg = None
+            for msg in reversed(recent_history):
+                if msg.get("role") == "assistant":
+                    last_assistant_msg = msg.get("content", "")
+                    break
+            
+            # More robust detection of file selection responses
+            is_file_selection_response = False
+            original_query_context = None
+            
+            if last_assistant_msg and "Multiple files found in this session" in last_assistant_msg:
+                is_file_selection_response = True
+                # Extract the original query from the previous user message
+                for msg in reversed(recent_history):
+                    if msg.get("role") == "user":
+                        original_query_context = msg.get("content", "")
+                        break
+            elif self._is_file_selection_response(query) and storage_paths:
+                # Even without clear context, if the query looks like a file selection
+                # and we have multiple cached documents, treat it as a file selection
+                cached_docs = get_all_cached_documents_with_names(storage_paths)
+                if len(cached_docs) > 1:
+                    is_file_selection_response = True
+                    print(f"🔍 Detected potential file selection response: '{query}'")
+                    # Try to find the original query from recent history
+                    for msg in reversed(recent_history):
+                        if msg.get("role") == "user" and not self._is_file_selection_response(msg.get("content", "")):
+                            original_query_context = msg.get("content", "")
+                            break
+            
+            if is_file_selection_response:
+                # This is a response to file selection, parse it
+                cached_docs = get_all_cached_documents_with_names(storage_paths)
+                if cached_docs and self._is_file_selection_response(query):
+                    selected_docs = self._parse_file_selection(query, cached_docs)
+                    if selected_docs:
+                        print(f"📋 User selected {len(selected_docs)} file(s) for processing")
+                        
+                        # Determine the task type from context or query
+                        task_type = "compare"  # Default to compare for file selection
+                        if last_assistant_msg:
+                            if "translate" in last_assistant_msg.lower():
+                                task_type = "translate"
+                            elif "summarize" in last_assistant_msg.lower():
+                                task_type = "summarize"
+                            elif "analyze" in last_assistant_msg.lower():
+                                task_type = "analyze"
+                            elif "extract" in last_assistant_msg.lower():
+                                task_type = "extract"
+                        
+                        if task_type == "compare":
+                            # For comparison, we need to prepare multiple texts
+                            self._selected_docs_for_comparison = selected_docs
+                            # Store the original query context for the comparison
+                            if original_query_context:
+                                self._original_comparison_query = original_query_context
+                                print(f"📄 Prepared {len(selected_docs)} selected files for comparison with original query: '{original_query_context}'")
+                            else:
+                                print(f"📄 Prepared {len(selected_docs)} selected files for comparison")
+                            # Force the intent to be comparison since we're handling a comparison request
+                            intent = "compare"
+                        else:
+                            # For other tasks, combine selected documents
+                            combined_text = []
+                            for doc_key, filename, chunks in selected_docs:
+                                combined_text.append("\n\n".join(chunks))
+                            file_text = "\n\n--- FILE SEPARATOR ---\n\n".join(combined_text)
+                            print(f"📄 Combined {len(selected_docs)} selected files for processing")
+                            # Force the intent based on the detected task type
+                            intent = task_type
+                    else:
+                        error_msg = "❌ Invalid file selection. Please try again with a valid number, 'all', or 'latest'."
+                        if stream:
+                            def _error_stream():
+                                for char in error_msg:
+                                    yield char
+                            return _error_stream()
+                        else:
+                            return error_msg
+        
         if intent == "translate":
             # Translation can work with files, chat history, or direct text
-            if not file_text and not recent_history:
-                # Check if the query itself contains text to translate
-                # Look for patterns like "translate: [text]" or "translate this: [text]"
-                import re
-                translation_patterns = [
-                    r'translate\s*:\s*(.+)',
-                    r'translate\s+this\s*:\s*(.+)',
-                    r'translate\s+"([^"]+)"',
-                    r'translate\s+([^:]+?)(?:\s+to\s+\w+)?$'
-                ]
+            if not file_text:
+                # First, check if we have cached documents from previous uploads in this session
+                if storage_paths:
+                    cached_docs = get_all_cached_documents_with_names(storage_paths)
+                    if cached_docs:
+                        print(f"📚 Found {len(cached_docs)} cached documents from previous uploads in this session")
+                        
+                        # Intelligent file selection for translation
+                        if self._should_ask_for_file_confirmation("translate", len(cached_docs)):
+                            # Create a confirmation message listing all available files
+                            file_list = []
+                            for i, (doc_key, filename, chunks) in enumerate(cached_docs, 1):
+                                file_size = sum(len(chunk) for chunk in chunks)
+                                file_list.append(f"{i}. {filename} ({file_size:,} characters)")
+                            
+                            confirmation_message = (
+                                f"📋 Multiple files found in this session. Please specify which file(s) you want to translate:\n\n"
+                                f"{chr(10).join(file_list)}\n\n"
+                                f"Please respond with:\n"
+                                f"- A single number (e.g., '1') to translate that specific file\n"
+                                f"- Multiple numbers (e.g., '1,3') to translate multiple files\n"
+                                f"- 'all' to translate all files\n"
+                                f"- 'latest' to translate the most recent file"
+                            )
+                            
+                            # Return the confirmation message instead of proceeding
+                            if stream:
+                                def _confirmation_stream():
+                                    for char in confirmation_message:
+                                        yield char
+                                return _confirmation_stream()
+                            else:
+                                return confirmation_message
+                        
+                        # If only one document, use it directly
+                        else:
+                            doc_key, filename, chunks = cached_docs[0]
+                            file_text = "\n\n".join(chunks)
+                            print(f"📄 Using the uploaded file for translation: {filename}")
                 
-                text_to_translate = None
-                for pattern in translation_patterns:
-                    match = re.search(pattern, query, re.IGNORECASE)
-                    if match:
-                        text_to_translate = match.group(1).strip()
-                        break
-                
-                if not text_to_translate:
-                    raise ValueError(
-                        "Translation tasks require one of the following:\n"
-                        "1. An attached file with content\n"
-                        "2. Chat history (previous conversation)\n"
-                        "3. Text in the query (e.g., 'translate: Hello world' or 'translate this: How are you?')\n"
-                        "4. Text in quotes (e.g., 'translate \"How are you?\" to Chinese')"
-                    )
-                
-                # Use the extracted text for translation
-                file_text = text_to_translate
-                print(f"📝 Extracted text to translate: {text_to_translate[:100]}...")
-            elif recent_history and not file_text:
-                # If we have chat history but no file, translate the conversation
-                print("💬 Translating chat history...")
-                # Extract the conversation text from history
-                conversation_text = self._extract_conversation_text(recent_history)
-                file_text = conversation_text
-                print(f"📝 Extracted conversation text: {conversation_text[:100]}...")
+                # If still no file_text, check if the query itself contains text to translate
+                if not file_text:
+                    import re
+                    translation_patterns = [
+                        r'translate\s*:\s*(.+)',
+                        r'translate\s+this\s*:\s*(.+)',
+                        r'translate\s+"([^"]+)"',
+                        r'translate\s+([^:]+?)(?:\s+to\s+\w+)?$'
+                    ]
+                    
+                    text_to_translate = None
+                    for pattern in translation_patterns:
+                        match = re.search(pattern, query, re.IGNORECASE)
+                        if match:
+                            text_to_translate = match.group(1).strip()
+                            break
+                    
+                    if text_to_translate:
+                        # Use the extracted text for translation
+                        file_text = text_to_translate
+                        print(f"📝 Extracted text to translate: {text_to_translate[:100]}...")
+                    elif recent_history:
+                        # If we have chat history but no file, translate the conversation
+                        print("💬 Translating chat history...")
+                        # Extract the conversation text from history
+                        conversation_text = self._extract_conversation_text(recent_history)
+                        file_text = conversation_text
+                        print(f"📝 Extracted conversation text: {conversation_text[:100]}...")
+                    else:
+                        raise ValueError(
+                            "Translation tasks require one of the following:\n"
+                            "1. An attached file with content\n"
+                            "2. A previously uploaded file in this session\n"
+                            "3. Text in the query (e.g., 'translate: Hello world' or 'translate this: How are you?')\n"
+                            "4. Text in quotes (e.g., 'translate \"How are you?\" to Chinese')\n"
+                            "5. Chat history (previous conversation)"
+                        )
 
             # Get file extension for file-type aware chunking
 
@@ -729,7 +924,46 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
                 return "\n".join(translations)
         elif intent == "summarize":
             if not file_text:
-                raise ValueError("Summarization tasks require an attached file with content.")
+                # Check if we have cached documents from previous uploads in this session
+                if storage_paths:
+                    cached_docs = get_all_cached_documents_with_names(storage_paths)
+                    if cached_docs:
+                        print(f"📚 Found {len(cached_docs)} cached documents from previous uploads in this session")
+                        
+                        # Intelligent file selection for summarization
+                        if self._should_ask_for_file_confirmation("summarize", len(cached_docs)):
+                            # Create a confirmation message listing all available files
+                            file_list = []
+                            for i, (doc_key, filename, chunks) in enumerate(cached_docs, 1):
+                                file_size = sum(len(chunk) for chunk in chunks)
+                                file_list.append(f"{i}. {filename} ({file_size:,} characters)")
+                            
+                            confirmation_message = (
+                                f"📋 Multiple files found in this session. Please specify which file(s) you want to summarize:\n\n"
+                                f"{chr(10).join(file_list)}\n\n"
+                                f"Please respond with:\n"
+                                f"- A single number (e.g., '1') to summarize that specific file\n"
+                                f"- Multiple numbers (e.g., '1,3') to summarize multiple files\n"
+                                f"- 'all' to summarize all files\n"
+                                f"- 'latest' to summarize the most recent file"
+                            )
+                            
+                            if stream:
+                                def _confirmation_stream():
+                                    for char in confirmation_message:
+                                        yield char
+                                return _confirmation_stream()
+                            else:
+                                return confirmation_message
+                        
+                        # If only one document, use it directly
+                        else:
+                            doc_key, filename, chunks = cached_docs[0]
+                            file_text = "\n\n".join(chunks)
+                            print(f"📄 Using the uploaded file for summarization: {filename}")
+                
+                if not file_text:
+                    raise ValueError("Summarization tasks require an attached file with content.")
 
             # Create summarization-optimized chunking config
             summary_config = ChunkingConfig(
@@ -764,7 +998,46 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
                 # Fall through to the RAG section below
                 intent = "qa"  # This will trigger the RAG workflow
             elif not file_text:
-                raise ValueError("Analysis tasks require an attached file with content.")
+                # Check if we have cached documents from previous uploads in this session
+                if storage_paths:
+                    cached_docs = get_all_cached_documents_with_names(storage_paths)
+                    if cached_docs:
+                        print(f"📚 Found {len(cached_docs)} cached documents from previous uploads in this session")
+                        
+                        # Intelligent file selection for analysis
+                        if self._should_ask_for_file_confirmation("analyze", len(cached_docs)):
+                            # Create a confirmation message listing all available files
+                            file_list = []
+                            for i, (doc_key, filename, chunks) in enumerate(cached_docs, 1):
+                                file_size = sum(len(chunk) for chunk in chunks)
+                                file_list.append(f"{i}. {filename} ({file_size:,} characters)")
+                            
+                            confirmation_message = (
+                                f"📋 Multiple files found in this session. Please specify which file(s) you want to analyze:\n\n"
+                                f"{chr(10).join(file_list)}\n\n"
+                                f"Please respond with:\n"
+                                f"- A single number (e.g., '1') to analyze that specific file\n"
+                                f"- Multiple numbers (e.g., '1,3') to analyze multiple files\n"
+                                f"- 'all' to analyze all files\n"
+                                f"- 'latest' to analyze the most recent file"
+                            )
+                            
+                            if stream:
+                                def _confirmation_stream():
+                                    for char in confirmation_message:
+                                        yield char
+                                return _confirmation_stream()
+                            else:
+                                return confirmation_message
+                        
+                        # If only one document, use it directly
+                        else:
+                            doc_key, filename, chunks = cached_docs[0]
+                            file_text = "\n\n".join(chunks)
+                            print(f"📄 Using the uploaded file for analysis: {filename}")
+                
+                if not file_text:
+                    raise ValueError("Analysis tasks require an attached file with content.")
 
             # Create analysis-optimized chunking config
             analysis_config = ChunkingConfig(
@@ -792,7 +1065,7 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
             
             # Check if we have additional session context to enhance the analysis
             if storage_paths:
-                cached_docs = get_all_cached_documents(storage_paths)
+                cached_docs = get_all_cached_documents_with_names(storage_paths)
                 if cached_docs:
                     print(f"🔗 Enhancing analysis with {len(cached_docs)} cached documents from session...")
                     # Create enhanced context for analysis
@@ -800,10 +1073,10 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
                     enhanced_context.append(f"📄 **Current File Analysis:**\n{all_text}")
                     
                     # Add relevant context from previous uploads
-                    for doc_key, doc_chunks in cached_docs:
+                    for doc_key, filename, doc_chunks in cached_docs:
                         if doc_key != key:  # Skip current file
                             doc_text = "\n\n".join(doc_chunks)
-                            enhanced_context.append(f"📚 **Additional Context from {doc_key}:**\n{doc_text}")
+                            enhanced_context.append(f"📚 **Additional Context from {filename}:**\n{doc_text}")
                     
                     enhanced_text = "\n\n---\n\n".join(enhanced_context)
                     print(f"✅ Enhanced analysis context with session knowledge")
@@ -813,7 +1086,46 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
 
         elif intent == "extract":
             if not file_text:
-                raise ValueError("Extraction tasks require an attached file with content.")
+                # Check if we have cached documents from previous uploads in this session
+                if storage_paths:
+                    cached_docs = get_all_cached_documents_with_names(storage_paths)
+                    if cached_docs:
+                        print(f"📚 Found {len(cached_docs)} cached documents from previous uploads in this session")
+                        
+                        # Intelligent file selection for extraction
+                        if self._should_ask_for_file_confirmation("extract", len(cached_docs)):
+                            # Create a confirmation message listing all available files
+                            file_list = []
+                            for i, (doc_key, filename, chunks) in enumerate(cached_docs, 1):
+                                file_size = sum(len(chunk) for chunk in chunks)
+                                file_list.append(f"{i}. {filename} ({file_size:,} characters)")
+                            
+                            confirmation_message = (
+                                f"📋 Multiple files found in this session. Please specify which file(s) you want to extract from:\n\n"
+                                f"{chr(10).join(file_list)}\n\n"
+                                f"Please respond with:\n"
+                                f"- A single number (e.g., '1') to extract from that specific file\n"
+                                f"- Multiple numbers (e.g., '1,3') to extract from multiple files\n"
+                                f"- 'all' to extract from all files\n"
+                                f"- 'latest' to extract from the most recent file"
+                            )
+                            
+                            if stream:
+                                def _confirmation_stream():
+                                    for char in confirmation_message:
+                                        yield char
+                                return _confirmation_stream()
+                            else:
+                                return confirmation_message
+                        
+                        # If only one document, use it directly
+                        else:
+                            doc_key, filename, chunks = cached_docs[0]
+                            file_text = "\n\n".join(chunks)
+                            print(f"📄 Using the uploaded file for extraction: {filename}")
+                
+                if not file_text:
+                    raise ValueError("Extraction tasks require an attached file with content.")
 
             # Create extraction-optimized chunking config
             extract_config = ChunkingConfig(
@@ -844,16 +1156,56 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
             # For comparison, we can use current file + cached documents, or just cached documents
             texts = []
 
-            # Add current file if provided
-            if file_text:
-                texts.append(file_text)
+            # Check if we have pre-selected documents for comparison
+            if hasattr(self, '_selected_docs_for_comparison') and self._selected_docs_for_comparison:
+                print(f"📋 Using {len(self._selected_docs_for_comparison)} pre-selected files for comparison")
+                
+                # Use original query context if available
+                comparison_query = query
+                if hasattr(self, '_original_comparison_query') and self._original_comparison_query:
+                    comparison_query = self._original_comparison_query
+                    print(f"📝 Using original comparison query: '{comparison_query}'")
+                    # Clear the stored query after use
+                    delattr(self, '_original_comparison_query')
+                
+                for doc_key, filename, chunks in self._selected_docs_for_comparison:
+                    texts.append("\n\n".join(chunks))
+                # Clear the selection after use
+                delattr(self, '_selected_docs_for_comparison')
+                
+                # Use the original query for the comparison
+                query = comparison_query
+            else:
+                # Add current file if provided
+                if file_text:
+                    texts.append(file_text)
 
-            # Add all cached documents from the session
-            if storage_paths:
-                cached_docs = get_all_cached_documents(storage_paths)
-                for doc_key, chunks in cached_docs:
-                    cached_text = "\n\n".join(chunks)
-                    texts.append(cached_text)
+                # Add all cached documents from the session
+                if storage_paths:
+                    cached_docs = get_all_cached_documents_with_names(storage_paths)
+                    if cached_docs:
+                        print(f"📚 Found {len(cached_docs)} cached documents from previous uploads in this session")
+                        
+                        # For comparison tasks, intelligently handle multiple files
+                        if len(cached_docs) > 1 and not file_text:
+                            # Auto-select all files for comparison (intelligent behavior)
+                            print(f"🤖 Intelligent selection: Auto-selecting all {len(cached_docs)} files for comparison")
+                            for doc_key, filename, chunks in cached_docs:
+                                texts.append("\n\n".join(chunks))
+                            print(f"📄 Using all {len(cached_docs)} cached documents for comparison")
+                        
+                        # If only one cached document and no current file, use it
+                        elif len(cached_docs) == 1 and not file_text:
+                            doc_key, filename, chunks = cached_docs[0]
+                            texts.append("\n\n".join(chunks))
+                            print(f"📄 Using the uploaded file for comparison: {filename}")
+                        
+                        # If we have current file and cached documents, add all cached documents
+                        elif file_text:
+                            for doc_key, filename, chunks in cached_docs:
+                                cached_text = "\n\n".join(chunks)
+                                texts.append(cached_text)
+                            print(f"📄 Adding {len(cached_docs)} cached documents to comparison with current file")
 
             # Need at least one document to compare
             if not texts:
@@ -918,13 +1270,13 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
             
             # Always check for accumulated session context, even when no file is uploaded
             if storage_paths:
-                cached_docs = get_all_cached_documents(storage_paths)
+                cached_docs = get_all_cached_documents_with_names(storage_paths)
                 if cached_docs:
                     print(f"📖 Checking {len(cached_docs)} cached documents from previous uploads in this session...")
                     # Track which documents we've already processed to avoid duplicates
                     processed_docs = set()
                     
-                    for doc_key, chunks in cached_docs:
+                    for doc_key, filename, chunks in cached_docs:
                         # Skip if we already have this document from current upload
                         if not file_text or doc_key != cache_key(compute_file_hash(file_path), "rag") if file_path else None:
                             # Skip if we've already processed this document
@@ -966,14 +1318,14 @@ IMPORTANT: Output ONLY in {target_language} language. Do not include the origina
                 if _is_asking_about_file_content(query):
                     print("📄 User is asking about file content but no file attached. Checking session cache...")
                     if storage_paths:
-                        cached_docs = get_all_cached_documents(storage_paths)
+                        cached_docs = get_all_cached_documents_with_names(storage_paths)
                         if cached_docs:
                             print(f"📚 Found {len(cached_docs)} cached documents in session. Using them for RAG...")
                             # Use all cached documents for comprehensive RAG
                             # Track which documents we've already processed to avoid duplicates
                             processed_docs = set()
                             
-                            for doc_key, chunks in cached_docs:
+                            for doc_key, filename, chunks in cached_docs:
                                 # Skip if we've already processed this document
                                 if doc_key in processed_docs:
                                     continue

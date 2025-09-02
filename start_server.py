@@ -15,7 +15,7 @@ def main():
     """Start the Agentic Service API server."""
     # Get configuration from environment
     host = os.getenv("API_HOST", "0.0.0.0")
-    port = int(os.getenv("API_PORT", "9510"))
+    port = int(os.getenv("API_PORT", "9211"))
     
     # Check if required environment variables are set
     vllm_endpoint = os.getenv("VLLM_ENDPOINT")

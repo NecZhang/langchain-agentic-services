@@ -155,7 +155,7 @@ test_database() {
     if python3 -c "
 import sys
 sys.path.insert(0, '.')
-from langchain_agent.database import check_db_connection
+from simple_agent.database import check_db_connection
 if check_db_connection():
     print('Database connection successful')
     exit(0)
@@ -254,7 +254,7 @@ main() {
     echo -e "${BLUE}📋 Next steps:${NC}"
     echo "1. Update your .env file with the correct DATABASE_URL"
     echo "2. Restart your application to use the database"
-    echo "3. Test the connection with: python3 -c 'from langchain_agent.database import check_db_connection; print(check_db_connection())'"
+    echo "3. Test the connection with: python3 -c 'from simple_agent.database import check_db_connection; print(check_db_connection())'"
     echo
     echo -e "${BLUE}🔧 Useful commands:${NC}"
     echo "  View logs: docker logs -f agentic_postgres"

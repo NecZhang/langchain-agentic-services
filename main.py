@@ -1,6 +1,6 @@
 """Command line interface for the simple LLM agent.
 
-This script provides a minimal wrapper around :class:`langchain_agent.agent.SimpleAgent`
+This script provides a minimal wrapper around :class:`simple_agent.agent.SimpleAgent`
 for demonstration purposes.  It allows you to pass a query and an
 optional file via command line arguments and prints the agent's
 response to standard output.  See the README for usage examples.
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import argparse
 import os
-from langchain_agent.agent import SimpleAgent
+from simple_agent.agent import SimpleAgent
 
 
 def main() -> None:

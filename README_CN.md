@@ -31,7 +31,7 @@
 
 4. **测试API**
    ```bash
-   curl -X POST http://localhost:9510/chat \
+   curl -X POST http://localhost:9211/chat \
      -F query='你好，测试服务' \
      -F user='测试用户'
    ```
@@ -45,7 +45,7 @@ VLLM_MODEL=Qwen/Qwen3-32B-FP8
 
 # API 服务器配置
 API_HOST=0.0.0.0
-API_PORT=9510
+API_PORT=9211
 
 # 语言配置（中文优先）
 DEFAULT_LANGUAGE=Chinese
@@ -58,7 +58,7 @@ MAX_FILE_SIZE_MB=50
 
 ## 📚 API 接口文档
 
-### 基础URL: `http://localhost:9510`
+### 基础URL: `http://localhost:9211`
 
 ### 🔗 接口端点
 
@@ -181,7 +181,7 @@ GET /config
 ```bash
 # 服务器设置
 HOST=0.0.0.0                    # 服务器主机 (默认: 0.0.0.0)
-PORT=9510                        # 服务器端口 (默认: 9510)
+PORT=9211                        # 服务器端口 (默认: 9211)
 
 # vLLM连接
 VLLM_ENDPOINT=http://192.168.6.10:8002  # vLLM服务器URL
@@ -248,7 +248,7 @@ AGENTIC_TEMP_DIR=.tmp_uploads    # 临时上传目录
 #### **网络流式传输 (远程客户端):**
 ```bash
 # 为了在网络上的平滑流式传输，使用 --no-buffer
-curl -X POST http://192.168.6.19:9510/chat \
+curl -X POST http://192.168.6.19:9211/chat \
   -F query='翻译这个文档为英文' \
   -F user='翻译员' \
   -F files=@文档.pdf \
@@ -259,13 +259,13 @@ curl -X POST http://192.168.6.19:9510/chat \
 #### **多语言翻译:**
 ```bash
 # 中文到英文
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='翻译为英文' \
   -F user='翻译员' \
   -F files=@中文文档.pdf
 
 # 英文到中文
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='翻译为中文' \
   -F user='翻译员' \
   -F files=@英文文档.pdf
@@ -274,20 +274,20 @@ curl -X POST http://localhost:9510/chat \
 #### **基于会话的工作流程:**
 ```bash
 # 步骤1: 上传文档
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='上传这篇研究论文' \
   -F user='研究员' \
   -F session='论文分析' \
   -F files=@研究.pdf
 
 # 步骤2: 询问关于文档的问题
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='主要发现是什么？' \
   -F user='研究员' \
   -F session='论文分析'
 
 # 步骤3: 翻译对话
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='将我们的对话翻译为中文' \
   -F user='研究员' \
   -F session='论文分析'
@@ -297,14 +297,14 @@ curl -X POST http://localhost:9510/chat \
 
 ### **纯文本聊天**
 ```bash
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='什么是人工智能？' \
   -F user='张三'
 ```
 
 ### **文档分析**
 ```bash
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='请分析这个财务报告的关键发现' \
   -F user='分析师' \
   -F files=@财务报告.pdf
@@ -312,7 +312,7 @@ curl -X POST http://localhost:9510/chat \
 
 ### **多文档对比**
 ```bash
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='对比这些方案并突出关键差异' \
   -F user='项目经理' \
   -F files=@方案A.pdf \
@@ -321,7 +321,7 @@ curl -X POST http://localhost:9510/chat \
 
 ### **流式响应**
 ```bash
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='详细分析市场趋势' \
   -F stream=true \
   -F files=@市场数据.xlsx
@@ -377,14 +377,14 @@ curl -F query='Analyze the contract risks'
 ### **示例：团队工作流程**
 ```bash
 # 市场团队上传研究报告
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='上传市场调研报告' \
   -F user='市场部' \
   -F session='Q4规划' \
   -F files=@市场调研.pdf
 
 # 稍后，询问后续问题
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='基于之前的报告，制定营销策略建议' \
   -F user='市场部' \
   -F session='Q4规划'
@@ -424,7 +424,7 @@ curl -F api_key='你的安全密钥' ...
 import requests
 
 def query_agent(query, files=None, user="默认用户", session="默认会话"):
-    url = "http://localhost:9510/chat"
+    url = "http://localhost:9211/chat"
     data = {"query": query, "user": user, "session": session}
     
     files_data = []
@@ -493,10 +493,10 @@ VLLM_MODEL=Qwen/Qwen3-32B-FP8      # 中文优化
 ### **健康检查**
 ```bash
 # 服务状态
-curl http://localhost:9510/health
+curl http://localhost:9211/health
 
 # 配置信息
-curl http://localhost:9510/config
+curl http://localhost:9211/config
 ```
 
 ### **日志记录**
@@ -545,7 +545,7 @@ formData.append('query', '分析这个文档');
 formData.append('files', fileInput.files[0]);
 formData.append('user', currentUser.id);
 
-fetch('http://localhost:9510/chat', {
+fetch('http://localhost:9211/chat', {
     method: 'POST',
     body: formData
 }).then(response => response.json());
@@ -580,7 +580,7 @@ results = process_documents_batch(
 ### **财务分析**
 ```bash
 # 财务报告分析
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='分析Q3财务报告，重点关注收入增长和成本控制' \
   -F user='财务总监' \
   -F session='Q3财务审查' \
@@ -590,7 +590,7 @@ curl -X POST http://localhost:9510/chat \
 ### **合同审查**
 ```bash
 # 合同风险评估
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='审查这个供应商合同，识别潜在风险和不利条款' \
   -F user='法务部' \
   -F session='供应商合同审查' \
@@ -600,7 +600,7 @@ curl -X POST http://localhost:9510/chat \
 ### **市场研究**
 ```bash
 # 竞争对手分析
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='对比分析这三个竞争对手的产品策略' \
   -F user='产品经理' \
   -F session='竞品分析' \
@@ -612,7 +612,7 @@ curl -X POST http://localhost:9510/chat \
 ### **政策解读**
 ```bash
 # 政策影响分析
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='解读新政策对我们业务的潜在影响和应对策略' \
   -F user='战略规划部' \
   -F session='政策分析' \
@@ -623,7 +623,7 @@ curl -X POST http://localhost:9510/chat \
 
 ### **结构化分析**
 ```bash
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='请按照以下结构分析这个商业计划书：
 1. 市场机会评估
 2. 竞争优势分析  
@@ -635,7 +635,7 @@ curl -X POST http://localhost:9510/chat \
 
 ### **多维度对比**
 ```bash
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='从技术可行性、成本效益、实施难度、风险程度四个维度对比这些技术方案' \
   -F files=@方案1.docx \
   -F files=@方案2.docx \
@@ -644,7 +644,7 @@ curl -X POST http://localhost:9510/chat \
 
 ### **趋势预测**
 ```bash
-curl -X POST http://localhost:9510/chat \
+curl -X POST http://localhost:9211/chat \
   -F query='基于历史数据分析销售趋势，并预测未来6个月的发展方向' \
   -F files=@销售数据.xlsx
 ```

@@ -25,8 +25,8 @@ from typing import Dict, List, Any, Optional
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from langchain_agent.database import init_db, SessionLocal
-from langchain_agent.db_service import DatabaseService
+from simple_agent.database import init_db, SessionLocal
+from simple_agent.db_service import DatabaseService
 
 
 class FileStorageMigrator:

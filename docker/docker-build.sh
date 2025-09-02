@@ -136,8 +136,8 @@ start_service() {
     fi
     
     $DOCKER_COMPOSE_CMD -f "$COMPOSE_FILE" up -d
-    print_success "Service started! Access at http://localhost:9510"
-    print_status "API docs: http://localhost:9510/docs"
+    print_success "Service started! Access at http://localhost:9211"
+    print_status "API docs: http://localhost:9211/docs"
 }
 
 # Function to stop service

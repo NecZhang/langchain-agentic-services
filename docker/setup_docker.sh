@@ -79,7 +79,7 @@ setup_env() {
             cat > .env << EOF
 # Server configuration
 API_HOST=0.0.0.0
-API_PORT=9510
+API_PORT=9211
 
 # vLLM connection (update these for your setup)
 VLLM_ENDPOINT=http://192.168.6.10:8002
@@ -197,8 +197,8 @@ show_next_steps() {
     echo "   cd docker && ./docker-build.sh build"
     echo "3. Start the service:"
     echo "   ./docker-build.sh start"
-    echo "4. Access the service at: http://localhost:9510"
-    echo "5. View API documentation at: http://localhost:9510/docs"
+    echo "4. Access the service at: http://localhost:9211"
+    echo "5. View API documentation at: http://localhost:9211/docs"
     echo ""
     echo "If you encounter network issues during build:"
     echo "1. Set proxy variables: source .proxy.env (if created)"

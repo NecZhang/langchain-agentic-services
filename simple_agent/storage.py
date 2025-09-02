@@ -241,3 +241,48 @@ def get_all_cached_documents(paths: StoragePaths) -> List[Tuple[str, List[str]]]
                     continue
 
     return cached_docs
+
+
+def get_all_cached_documents_with_names(paths: StoragePaths) -> List[Tuple[str, str, List[str]]]:
+    """Get all cached documents from the session with original filenames.
+
+    Returns
+    -------
+    List[Tuple[str, str, List[str]]]
+        List of (cache_key, original_filename, chunks) tuples for all cached documents in the session.
+    """
+    cached_docs = []
+    if not paths.caches_dir.exists():
+        return cached_docs
+
+    # Get all uploaded files to map hashes to original filenames
+    upload_files = {}
+    if paths.uploads_dir.exists():
+        for upload_file in paths.uploads_dir.iterdir():
+            if upload_file.is_file():
+                # Compute hash of the uploaded file to match with cache keys
+                file_hash = compute_file_hash(str(upload_file))
+                upload_files[file_hash] = upload_file.name
+
+    # Iterate through all cache directories
+    for cache_dir in paths.caches_dir.iterdir():
+        if cache_dir.is_dir():
+            chunks_file = cache_dir / "chunks.json"
+            if chunks_file.exists():
+                try:
+                    with open(chunks_file, "r", encoding="utf-8") as f:
+                        chunks = json.load(f)
+                        
+                        # Extract hash from cache directory name (format: hash_mode)
+                        cache_key = cache_dir.name
+                        doc_hash = cache_key.split('_')[0] if '_' in cache_key else cache_key
+                        
+                        # Get original filename
+                        original_filename = upload_files.get(doc_hash, cache_key)
+                        
+                        cached_docs.append((cache_key, original_filename, chunks))
+                except (json.JSONDecodeError, IOError):
+                    # Skip corrupted cache files
+                    continue
+
+    return cached_docs

@@ -80,9 +80,9 @@ cd docker
 ```
 
 ### **3. Access the Service**
-- **API**: http://localhost:9510
-- **Documentation**: http://localhost:9510/docs
-- **Health Check**: http://localhost:9510/docs
+- **API**: http://localhost:9211
+- **Documentation**: http://localhost:9211/docs
+- **Health Check**: http://localhost:9211/docs
 
 ## 🌐 Proxy Configuration
 
@@ -153,8 +153,8 @@ chmod +x docker/setup_docker.sh
 
 2. **Port conflicts:**
    ```bash
-   # Check if port 9510 is in use
-   netstat -tulpn | grep 9510
+   # Check if port 9211 is in use
+   netstat -tulpn | grep 9211
    
    # Change port in docker-compose.yml if needed
    ```
@@ -191,7 +191,7 @@ chmod +x docker/setup_docker.sh
 - `VLLM_ENDPOINT`: URL of your vLLM server
 - `VLLM_MODEL`: Model name to use
 - `API_HOST`: Host to bind to (default: 0.0.0.0)
-- `API_PORT`: Port to bind to (default: 9510)
+- `API_PORT`: Port to bind to (default: 9211)
 
 ### **Optional Variables**
 - `API_KEY`: API key for authentication
@@ -273,8 +273,8 @@ If you encounter issues:
 
 - Docker image builds without errors
 - Service starts successfully
-- API responds at http://localhost:9510
-- Documentation accessible at http://localhost:9510/docs
+- API responds at http://localhost:9211
+- Documentation accessible at http://localhost:9211/docs
 - No network connectivity errors during build
 - All dependencies installed correctly
 

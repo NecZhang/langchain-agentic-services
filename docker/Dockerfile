@@ -50,7 +50,7 @@ RUN uv sync --frozen --no-dev && \
     uv run python -c "import fastapi, uvicorn, dotenv; print('✅ All required modules imported successfully')"
 
 # Copy only the necessary application files
-COPY langchain_agent/ ./langchain_agent/
+COPY simple_agent/ ./simple_agent/
 COPY api.py ./
 COPY start_server.py ./
 COPY main.py ./
@@ -63,11 +63,11 @@ ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
 # Expose port
-EXPOSE 9510
+EXPOSE 9211
 
 # Health check (using the actual API endpoint)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:9510/docs || exit 1
+    CMD curl -f http://localhost:9211/docs || exit 1
 
 # Run the service using uv run to ensure virtual environment is activated
 CMD ["uv", "run", "python", "start_server.py"]
